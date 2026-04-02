@@ -1,0 +1,50 @@
+import pandas as pd
+
+def aplicar_politica_rejeicao(df_novos_boletos, df_base_auxiliar, df_analise_grafos):
+    """
+    Aplica filtros de segurança para aceitação ou rejeição de novos boletos no FIDC.
+    """
+    # 1. Cruzamento de Dados para enriquecer os novos boletos
+    df = pd.merge(df_novos_boletos, df_base_auxiliar[['id_cnpj', 'cd_cnae_prin']], 
+                  left_on='id_pagador', right_on='id_cnpj', how='left')
+    
+    # 2. Definição dos Parâmetros de Bloqueio (Baseados na análise anterior)
+    SETORES_BLOQUEADOS = [1066000.0, 1061901.0, 4644301.0, 4649406.0]
+    CEDENTES_BLOQUEADOS = [
+        '1bd83bded8cf60319a8826c4601a7b80343d06172a9df72676dcced89be050c8', 
+        'b26f3b08949895e21b25303177e135a85587c1bad543a6c6c10051f124488ec9'
+    ]
+    LIMITE_PD_MAXIMO = 0.50  # 50% de probabilidade de default
+    
+    # 3. Lógica de Filtragem
+    rejeitados = []
+    
+    for idx, row in df.iterrows():
+        motivos = []
+        
+        # Regra 1: Setor Crítico
+        if row['cd_cnae_prin'] in SETORES_BLOQUEADOS:
+            motivos.append("Setor com PD histórica elevada")
+            
+        # Regra 2: Cedente Crítico
+        if row['id_beneficiario'] in CEDENTES_BLOQUEADOS:
+            motivos.append("Cedente com histórico de inadimplência severa")
+            
+        # Regra 3: Risco Individual (Se a PD já tiver sido calculada pelo modelo)
+        if 'probability_of_default' in row and row['probability_of_default'] > LIMITE_PD_MAXIMO:
+            motivos.append(f"Risco individual excessivo ({row['probability_of_default']:.2%})")
+            
+        if motivos:
+            rejeitados.append({
+                'id_boleto': row['id_boleto'],
+                'vlr_nominal': row['vlr_nominal'],
+                'status': 'REJEITADO',
+                'motivo': " | ".join(motivos)
+            })
+            
+    return pd.DataFrame(rejeitados)
+
+# --- Exemplo de Uso ---
+# novos_boletos = pd.read_csv('novos_boletos_entrada.csv')
+# lista_para_o_comite = aplicar_politica_rejeicao(novos_boletos, base_auxiliar, analise_grafos)
+# lista_para_o_comite.to_excel('decisao_comite_risco.xlsx', index=False)

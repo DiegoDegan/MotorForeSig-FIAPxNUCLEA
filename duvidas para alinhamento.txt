@@ -1,0 +1,2 @@
+DEFAULT
+Script de limpeza definiu o default para 60 dias. Precisamos ver se esse tempo é o ideal. Obtive respostas variadas do Gemini: 60 a 90 dias e 5 a 15 dias como o ideal.

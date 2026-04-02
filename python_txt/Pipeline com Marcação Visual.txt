@@ -1,0 +1,40 @@
+import pandas as pd
+
+def processar_pipeline_com_alerta(caminho_novos_boletos, base_auxiliar, politica_rejeicao_xlsx):
+    # 1. Carregar novos dados e a política de regras
+    df_novos = pd.read_csv(caminho_novos_boletos)
+    df_regras = pd.read_excel(politica_rejeicao_xlsx)
+    
+    # 2. Identificar quais boletos devem ser marcados (Baseado nos IDs da política)
+    ids_rejeitados = df_regras['id_boleto'].tolist()
+    
+    # Criar coluna de status para facilitar o filtro do operador
+    df_novos['ACAO_SUGERIDA'] = df_novos['id_boleto'].apply(
+        lambda x: 'BLOQUEAR' if x in ids_rejeitados else 'APROVAR'
+    )
+    
+    # 3. Gerar Excel com Formatação Condicional
+    output_file = 'PIPELINE_OPERADOR_MESA.xlsx']
+    writer = pd.ExcelWriter(output_file, engine='xlsxwriter')
+    df_novos.to_excel(writer, sheet_name='Analise_Risco', index=False)
+    
+    workbook  = writer.book
+    worksheet = writer.sheets['Analise_Risco']
+    
+    # Definir o formato Vermelho (Preenchimento e Fonte)
+    format_rejeicao = workbook.add_format({'bg_color': '#FFC7CE', 'font_color': '#9C0006'})
+    
+    # Aplicar formatação condicional na linha inteira se a coluna 'ACAO_SUGERIDA' for 'BLOQUEAR'
+    # Assumindo que ACAO_SUGERIDA é a última coluna (letra correspondente ao número de colunas)
+    last_col_char = chr(64 + len(df_novos.columns))
+    worksheet.conditional_format(f'A2:{last_col_char}{len(df_novos)+1}', {
+        'type':     'formula',
+        'criteria': f'=${last_col_char}2="BLOQUEAR"',
+        'format':   format_rejeicao
+    })
+    
+    writer.close()
+    print(f"Pipeline finalizado! Arquivo pronto para o operador: {output_file}")
+
+# Execução do exemplo
+# processar_pipeline_com_alerta('novos_boletos.csv', base_auxiliar, 'politica_rejeicao_automatica.xlsx')
