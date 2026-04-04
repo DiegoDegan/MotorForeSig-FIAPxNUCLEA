@@ -22,8 +22,8 @@ Transformar as faturas em uma malha relacional (Grafos).
 
 ### Fase 3: A Varredura Macroprudencial Autónoma (YAML)
 Uma inteligência "Curadora" (`atualizar_politicas_dinamicas.py`) investiga todo o histórico transacional à la "Auditor Financeiro".
-- Setores Mercadológicos (CNAE) com calote histórico `> 25%`? Ele joga na "Lista Negra" (*Tier 1*).
-- Cedentes com calote `> 30%` também vão à lista negra.
+- **Setores Mercadológicos (CNAE):** Aplica a "Fórmula de Toxidade" do protótipo no nível macro. Em vez de bloquear apenas por calote, o motor avalia o `Risco Composto = Taxa de Default + (1 - (Score Materialidade Médio / 1000))`. Setores com toxidade `> 0.50` entram na Lista Negra (*Tier 1*). Isso protege setores estratégicos que possuem alta materialidade mesmo com atrasos pontuais.
+- **Cedentes:** Bloqueio de novos títulos vindos de fornecedores com calote histórico `> 30%`.
 - Estas Regras Duras não ficam presas no código. Elas são gravadas num documento leve em **YAML**, podendo ser lido instantaneamente por qualquer Frontend de Dashboard ou alterado manualmente por um humano e o fundo as acata *na hora*.
 
 ### Fase 4: Inteligência Artificial Dupla (PD, LGD)
@@ -47,4 +47,4 @@ No ápice do funil (`pipeline_operacional.py`), o Motor analisa as Hard Rules da
 * `[REPROVADO_AUTO]`: O Machine Learning apontou que, embora o setor ou fornecedor sejam limpos, aquele boleto individual específico tem forte chance de Default.
 
 ### Infraestrutura de Escalabilidade
-Todo esse robusto back-end foi preparado para ser exposto em **Endpoints (Rest API no FastAPI)** sob demanda para portais externos, conteinerizado em `Docker` pronto para decolar no GCP (Cloud Run) da Antigravity, de modo inteiramente *Serverless* e seguro (dotEnvs).
+Todo esse robusto back-end foi preparado para ser exposto em **Endpoints (Rest API no FastAPI)** sob demanda para portais externos, conteinerizado em `Docker` pronto para decolar no GCP (Cloud Run), de modo inteiramente *Serverless* e seguro (dotEnvs).

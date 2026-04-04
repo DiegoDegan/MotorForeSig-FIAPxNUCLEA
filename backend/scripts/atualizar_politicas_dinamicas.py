@@ -28,16 +28,31 @@ def atualizar_macroprudencial():
     # Remove cnaes invalidos ou zerados
     df = df[df['cnae_fmt'] != "0"]
     
-    # 2. Computar Tiers de Risco CNAE
-    logger.info("Agrupando Taxas de Default Históricas por Setor (CNAE)...")
-    agrup_cnae = df.groupby('cnae_fmt')['default'].agg(['mean', 'count']).reset_index()
-    agrup_cnae.rename(columns={'mean': 'taxa_default', 'count': 'volumetria'}, inplace=True)
+    # 2. Computar Tiers de Risco CNAE com Score Materialidade
+    logger.info("Apurando Score de Materialidade e Inadimplência Histórica por Setor (CNAE)...")
+    
+    # Adicionar o score_materialidade à agregação
+    if 'score_materialidade_v2' not in df.columns:
+        logger.warning("Coluna 'score_materialidade_v2' não encontrada, assumindo Score Forte 1000.")
+        df['score_materialidade_v2'] = 1000.0
+    else:
+        df['score_materialidade_v2'] = df['score_materialidade_v2'].fillna(1000.0)
+
+    agrup_cnae = df.groupby('cnae_fmt').agg(
+        taxa_default=('default', 'mean'),
+        volumetria=('default', 'count'),
+        score_medio=('score_materialidade_v2', 'mean')
+    ).reset_index()
+    
+    # Aplicação exata da Risco Genial do Protótipo aplicado ao Macro-Setor:
+    # Taxa Calote + (1 - (Score Médio Setor / 1000))
+    agrup_cnae['risco_composito_cnae'] = agrup_cnae['taxa_default'] + (1.0 - (agrup_cnae['score_medio'] / 1000.0))
     
     # Filtro antiruído: Ignorar CNAEs com baixíssima amostragem histórica (< 5 operações)
     cnaes_relevantes = agrup_cnae[agrup_cnae['volumetria'] >= 5]
     
-    cnaes_bloqueados = cnaes_relevantes[cnaes_relevantes['taxa_default'] >= 0.25]['cnae_fmt'].tolist()
-    cnaes_alerta = cnaes_relevantes[(cnaes_relevantes['taxa_default'] >= 0.15) & (cnaes_relevantes['taxa_default'] < 0.25)]['cnae_fmt'].tolist()
+    cnaes_bloqueados = cnaes_relevantes[cnaes_relevantes['risco_composito_cnae'] > 0.50]['cnae_fmt'].tolist()
+    cnaes_alerta = cnaes_relevantes[(cnaes_relevantes['risco_composito_cnae'] >= 0.40) & (cnaes_relevantes['risco_composito_cnae'] <= 0.50)]['cnae_fmt'].tolist()
     
     # 3. Computar Cedentes Tóxicos (Blacklist individual)
     logger.info("Agrupando Taxas de Default por Fornecedor (Cedente)...")
