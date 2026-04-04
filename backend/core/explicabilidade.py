@@ -75,7 +75,13 @@ class RiscoExplainer:
                 direcao = "aumentou" if impacto > 0 else "reduziu"
                 
                 # Chain-of-Thought: Tradução para o operador
-                if 'pagerank' in feature_name.lower():
+                if 'total_exposed' in feature_name.lower():
+                    razoes.append(f"O grau de exposição financeira a Pagadores Tóxicos do fornecedor (R$ {valor_operacional:,.2f}) {direcao} o risco de contágio imediato")
+                elif 'avg_payer_risk' in feature_name.lower():
+                    razoes.append(f"O risco estatístico médio da vizinhança na malha (Score: {valor_operacional:.2f}) {direcao} a chance de default em cascata")
+                elif 'num_payers' in feature_name.lower():
+                    razoes.append(f"A dependência crítica de {valor_operacional:.0f} sacados tóxicos pelo beneficiário {direcao} o grau de incerteza da fatura")
+                elif 'pagerank' in feature_name.lower():
                     razoes.append(f"A conectividade sistêmica da empresa na rede (PageRank: {valor_operacional:.4f}) {direcao} substancialmente o risco de contágio")
                 elif 'centrality' in feature_name.lower():
                     razoes.append(f"O número de conexões com outras empresas (Centralidade: {valor_operacional:.0f}) {direcao} o risco")
@@ -83,7 +89,7 @@ class RiscoExplainer:
                     razoes.append(f"O cenário de juros e sua volatilidade (SELIC atual: {valor_operacional:.2f}) {direcao} a pressão sobre as margens (risco macro)")
                 elif 'ipca' in feature_name.lower():
                     razoes.append(f"A inflação do período (IPCA: {valor_operacional:.2f}) {direcao} a incerteza inflacionária")
-                elif 'valor' in feature_name.lower():
+                elif 'valor' in feature_name.lower() or 'vlr_nominal' in feature_name.lower():
                     razoes.append(f"A magnitude financeira/ticket da transação (R$ {valor_operacional:,.2f}) {direcao} a exposição ao risco")
                 else:
                     razoes.append(f"O indicador '{feature_name}' (Valor Real: {valor_operacional:.2f}) {direcao} a probabilidade de default baseada em históricos")
