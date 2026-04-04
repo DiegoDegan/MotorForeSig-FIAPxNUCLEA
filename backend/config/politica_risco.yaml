@@ -16,6 +16,9 @@ filtros_macroprudenciais:
   - '4652400'
   - '4789005'
   - '5229002'
+  cedentes_bloqueados_tier1:
+  - 6c22008101528e56669fa5d33f140a080ca2179ac2c2846f739bddcfcd8e63da
+  - 7700da74e2a2bcf2c0d2148d42dab6580690745cf671b7c71a8d5eec984e4b46
 limites_concessao_ia:
   nota_corte_reprovacao_pd: 0.7
   nota_encaminhamento_mesa_pd: 0.4

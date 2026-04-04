@@ -16,28 +16,68 @@ class LocalMetricsExtractor:
         pass
 
     def compute_local_metrics(self) -> pd.DataFrame:
+        import numpy as np
+        from collections import defaultdict
         processed_dir = os.path.join("data", "processed")
         boletos_path = os.path.join(processed_dir, "base_boletos_tratados.csv")
+        aux_path = os.path.join(processed_dir, "base_auxiliar_tratada.csv")
         
-        logger.info(f"Carregando {boletos_path} para computar PageRank e Degree localmente...")
+        logger.info("Carregando bases para computar Grafos e Contágio Reverso...")
         df_boletos = pd.read_csv(boletos_path)
+        df_aux = pd.read_csv(aux_path)
         
-        # Cria grafo dirigido
+        # Agrupamento para somar os valores das transações paralelas na criação de arestas únicas
+        edges = df_boletos.groupby(['id_pagador', 'id_beneficiario']).agg(
+            total_valor=('vlr_nominal', 'sum')
+        ).reset_index()
+        
+        # Cria grafo dirigido com valores financeiros ponderados
         G = nx.from_pandas_edgelist(
-            df_boletos, 
+            edges, 
             source='id_pagador', 
             target='id_beneficiario', 
-            edge_attr='id_boleto', 
+            edge_attr='total_valor', 
             create_using=nx.DiGraph()
         )
         
-        logger.info("Processando algoritmo PageRank localmente...")
-        pagerank = nx.pagerank(G, alpha=0.85)
-        
-        logger.info("Processando agoritmo Degree Centrality localmente...")
+        logger.info("Processando PageRank e Degree localmente...")
+        pagerank = nx.pagerank(G, weight='total_valor', alpha=0.85)
         degree = nx.degree_centrality(G)
         
-        # Mapeando de volta para as transações
+        logger.info("Minerando Exposição Reversa (Contágio Protótipo)...")
+        # Computar Risco Composto do Sacado
+        df_aux['media_atraso_dias'] = df_aux['media_atraso_dias'].fillna(0)
+        df_aux['score_materialidade_v2'] = df_aux['score_materialidade_v2'].fillna(500)
+        df_aux['risk_score_raw'] = (df_aux['media_atraso_dias'] / 365) + (1 - df_aux['score_materialidade_v2'] / 1000)
+        risk_map = dict(zip(df_aux['id_cnpj'], df_aux['risk_score_raw']))
+        
+        contagio_map = {}
+        for n in G.nodes():
+            if G.in_degree(n) > 0:
+                predecessors = list(G.predecessors(n))
+                valor_exposto = 0.0
+                riscos_pagadores = []
+                
+                for p in predecessors:
+                    p_risk = risk_map.get(p, 0.5)
+                    riscos_pagadores.append(p_risk)
+                    
+                    if p_risk > 0.5:
+                        valor_exposto += G[p][n]['total_valor']
+                        
+                contagio_map[n] = {
+                    'total_exposed_value': valor_exposto,
+                    'avg_payer_risk': np.mean(riscos_pagadores) if riscos_pagadores else 0.0,
+                    'num_payers': len(predecessors)
+                }
+            else:
+                contagio_map[n] = {
+                    'total_exposed_value': 0.0,
+                    'avg_payer_risk': 0.0,
+                    'num_payers': 0
+                }
+        
+        # Mapeando de volta para o nível Transacional (Boletos Originais)
         df_ml = pd.DataFrame({
             'id_boleto': df_boletos['id_boleto'],
             'id_pagador': df_boletos['id_pagador'],
@@ -48,6 +88,11 @@ class LocalMetricsExtractor:
         df_ml['pagador_degree'] = df_ml['id_pagador'].map(degree).fillna(0.0)
         df_ml['beneficiario_pagerank'] = df_ml['id_beneficiario'].map(pagerank).fillna(0.0)
         df_ml['beneficiario_degree'] = df_ml['id_beneficiario'].map(degree).fillna(0.0)
+        
+        # Amarrando Contágio no Beneficiário (Cedente)
+        df_ml['total_exposed_value'] = df_ml['id_beneficiario'].apply(lambda x: contagio_map.get(x, {}).get('total_exposed_value', 0.0))
+        df_ml['avg_payer_risk'] = df_ml['id_beneficiario'].apply(lambda x: contagio_map.get(x, {}).get('avg_payer_risk', 0.0))
+        df_ml['num_payers'] = df_ml['id_beneficiario'].apply(lambda x: contagio_map.get(x, {}).get('num_payers', 0))
         
         return df_ml
 

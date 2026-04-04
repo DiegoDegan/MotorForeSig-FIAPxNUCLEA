@@ -35,6 +35,7 @@ def aplicar_politica(df_predictions, pol):
     
     cnaes_bloqueados = [str(x) for x in filtros.get('cnaes_bloqueados_tier1', [])]
     cnaes_alerta = [str(x) for x in filtros.get('cnaes_alerta_tier2', [])]
+    cedentes_bloqueados = [str(x) for x in filtros.get('cedentes_bloqueados_tier1', [])]
     
     pd_reprovacao = limites.get('nota_corte_reprovacao_pd', 0.70)
     pd_mesa = limites.get('nota_encaminhamento_mesa_pd', 0.40)
@@ -44,20 +45,26 @@ def aplicar_politica(df_predictions, pol):
         pd_score = row['score_pd_bruto']
         atraso_previsto = row['atraso_previsto']
         
-        # Extrai CNAE e remove casa decimal (string match)
+        # Extrai Identificadores
         cnae = pd.to_numeric(row.get('cd_cnae_prin', 0), errors='coerce')
         cnae_str = str(int(cnae)) if pd.notna(cnae) else "0"
+        id_ben = str(row.get('id_beneficiario', '0'))
         
         # Alerta Setorial
         alerta_setor = f" [ALERTA MACRO] Setor CNAE {cnae_str} encontra-se em estado de atenção (Tier 2)." if cnae_str in cnaes_alerta else ""
         alertas_macro.append(alerta_setor)
         
-        # Regra 1: Bloqueio Macroprudencial
+        # Regra 1: Bloqueio Macroprudencial Setorial
         if cnae_str in cnaes_bloqueados:
             status.append('REPROVADO_SETORES_CRITICOS')
             continue
             
-        # Regra 2: Score de IA da Empresa
+        # Regra 2: Bloqueio Fornecedor (Cedente Tóxico)
+        if id_ben in cedentes_bloqueados:
+            status.append('REPROVADO_CEDENTE_TOXICO')
+            continue
+            
+        # Regra 3: Score de IA da Empresa
         if pd_score >= pd_reprovacao:
             status.append('REPROVADO_AUTO')
         elif pd_score >= pd_mesa or atraso_previsto > atraso_max:
@@ -111,6 +118,9 @@ def rodar_pipeline():
         df_lote['score_pd_bruto'] = scores_pd
         df_lote['atraso_previsto'] = previsoes_atraso
         
+        # Computação Contábil FIDC: Perda Esperada (EL) em Reais
+        df_lote['perda_esperada_el'] = df_lote['vlr_nominal'] * df_lote['score_pd_bruto']
+        
         logger.info("5. Acionando Motor de Decisão (Hard Rules Hibrido YAML)...")
         politica_yaml = carregar_politica()
         df_lote = aplicar_politica(df_lote, politica_yaml)
@@ -128,8 +138,8 @@ def rodar_pipeline():
         
         logger.info("7. Exportando Pipeline Operacional (Dashboard/Mesa)...")
         relatorio_colunas = [
-            'id_boleto', 'id_pagador', 'vlr_nominal',
-            'score_pd_bruto', 'atraso_previsto', 'decisao_politica', 'parecer_ia_shap'
+            'id_boleto', 'id_pagador', 'id_beneficiario', 'vlr_nominal',
+            'score_pd_bruto', 'perda_esperada_el', 'atraso_previsto', 'decisao_politica', 'parecer_ia_shap'
         ]
         
         # Garante que identificadores não travem caso não estejam na lista amostrada
@@ -149,7 +159,9 @@ def rodar_pipeline():
         teste = df_relatorio.iloc[0]
         print("\n\n------- EXEMPLO REAL DE SAÍDA (TELA DO OPERADOR) --------")
         print(f"Boleto Cód:   {teste.get('id_boleto', 'N/A')[:10]}...")
+        print(f"Valor Face:   R$ {teste.get('vlr_nominal', 0):,.2f}")
         print(f"Risco (PD):   {teste['score_pd_bruto']:.2%}")
+        print(f"Perda EL:     R$ {teste.get('perda_esperada_el', 0):,.2f}")
         print(f"Dias de Atraso Previstos: {teste['atraso_previsto']:.1f}")
         print(f"VEREDITO:     >>> {teste['decisao_politica']} <<<")
         print(f"Resumo da IA: {teste['parecer_ia_shap']}")
