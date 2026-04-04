@@ -63,3 +63,11 @@ Se quiser acoplar o MFS a um painel (React/Angular) para consultas instantâneas
 uvicorn backend.main_rest_api:app --host 0.0.0.0 --port 8080 --reload
 ```
 Acesse `http://localhost:8080/docs` no seu navegador para utilizar o **Swagger UI** da ML API.
+
+### 🛡️ Autenticação (Novidade)
+A partir da versão atual, os endpoints de predição e métricas estão protegidos.
+1. No Swagger UI, localize o botão **"Authorize"** no topo.
+2. Insira as credenciais padrão:
+   - **Username:** `admin_mfs`
+   - **Password:** `nuclea_segura_2024`
+3. Após clicar em "Login", todos os cadeados das rotas se fecharão e você poderá realizar as chamadas de Risco normalmente.

@@ -84,7 +84,7 @@ def montar_base_modelagem():
         # Limpezas Finais antes do ML (substituir tipos textuais e converter IDs)
         # Guardaremos os identificadores para poder saber de que boleto estamos falando na esteira operacional.
         # Eles simplesmente não entrarão como array X na hora do fit (já isolamos isso no treinador.py)
-        cols_to_drop = ['tipo_baixa', 'tipo_especie', 'uf', 'dt_emissao', 'dt_vencimento', 'dt_pagamento']
+        cols_to_drop = ['tipo_baixa', 'tipo_especie', 'uf', 'dt_vencimento', 'dt_pagamento']
         df_modelo.drop(columns=[c for c in cols_to_drop if c in df_modelo.columns], inplace=True, errors="ignore")
         
         # Dropa possíveis NaNs que sobraram
