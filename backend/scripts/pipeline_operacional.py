@@ -92,12 +92,12 @@ def rodar_pipeline():
         
         explicador = RiscoExplainer(models_dir=models_dir)
         
-        # Simula operação: Pega os últimos registros da esteira (que emitiram hoje, por ex)
+        # Operação em Toda a Base Ativa
         logger.info("2. Ingestão da Remessa Comercial...")
         df_real = pd.read_csv(os.path.join(processed_dir, 'base_modelagem.csv'))
         
-        # Vamos pegar uma amostra pequena, como um simulador de lote de desconto de recebíveis (FIDCs)
-        df_lote = df_real.sample(n=30, random_state=42).copy()
+        # Pega toda a base sem limitação
+        df_lote = df_real.copy()
         
         logger.info("3. Formatando Vetores para IA...")
         X = df_lote.copy()
