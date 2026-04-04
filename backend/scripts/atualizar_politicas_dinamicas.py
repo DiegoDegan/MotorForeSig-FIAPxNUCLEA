@@ -28,22 +28,32 @@ def atualizar_macroprudencial():
     # Remove cnaes invalidos ou zerados
     df = df[df['cnae_fmt'] != "0"]
     
-    # 2. Computar Tiers de Risco
+    # 2. Computar Tiers de Risco CNAE
     logger.info("Agrupando Taxas de Default Históricas por Setor (CNAE)...")
-    agrupamento = df.groupby('cnae_fmt')['default'].agg(['mean', 'count']).reset_index()
-    agrupamento.rename(columns={'mean': 'taxa_default', 'count': 'volumetria'}, inplace=True)
+    agrup_cnae = df.groupby('cnae_fmt')['default'].agg(['mean', 'count']).reset_index()
+    agrup_cnae.rename(columns={'mean': 'taxa_default', 'count': 'volumetria'}, inplace=True)
     
     # Filtro antiruído: Ignorar CNAEs com baixíssima amostragem histórica (< 5 operações)
-    cnaes_relevantes = agrupamento[agrupamento['volumetria'] >= 5]
+    cnaes_relevantes = agrup_cnae[agrup_cnae['volumetria'] >= 5]
     
     cnaes_bloqueados = cnaes_relevantes[cnaes_relevantes['taxa_default'] >= 0.25]['cnae_fmt'].tolist()
     cnaes_alerta = cnaes_relevantes[(cnaes_relevantes['taxa_default'] >= 0.15) & (cnaes_relevantes['taxa_default'] < 0.25)]['cnae_fmt'].tolist()
     
-    # 3. Empacotar e Salvar Config YML
+    # 3. Computar Cedentes Tóxicos (Blacklist individual)
+    logger.info("Agrupando Taxas de Default por Fornecedor (Cedente)...")
+    agrup_cedente = df.groupby('id_beneficiario')['default'].agg(['mean', 'count']).reset_index()
+    
+    # Filtro de Confiança: um cedente precisa ter negociado pelo menos 10 titulos para podermos o sentenciar
+    cedentes_relevantes = agrup_cedente[agrup_cedente['count'] >= 10]
+    # Limite rigoroso: 30% de perda
+    cedentes_bloqueados = cedentes_relevantes[cedentes_relevantes['mean'] >= 0.30]['id_beneficiario'].astype(str).tolist()
+    
+    # 4. Empacotar e Salvar Config YML
     politica = {
         'filtros_macroprudenciais': {
             'cnaes_bloqueados_tier1': sorted(cnaes_bloqueados),
-            'cnaes_alerta_tier2': sorted(cnaes_alerta)
+            'cnaes_alerta_tier2': sorted(cnaes_alerta),
+            'cedentes_bloqueados_tier1': sorted(cedentes_bloqueados)
         },
         'limites_concessao_ia': {
             'nota_corte_reprovacao_pd': 0.70,
@@ -61,8 +71,9 @@ def atualizar_macroprudencial():
         yaml.dump(politica, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
         
     logger.info(f"=== Política Dinâmica salva em {out_yaml} ===")
-    logger.info(f"CNAEs Bloqueados (>25% de Risco): {len(cnaes_bloqueados)}")
-    logger.info(f"CNAEs em Risco Crítico (15-24%): {len(cnaes_alerta)}")
+    logger.info(f"CNAEs Bloqueados (>25%): {len(cnaes_bloqueados)}")
+    logger.info(f"CNAEs em Alerta (15-24%): {len(cnaes_alerta)}")
+    logger.info(f"Cedentes Tóxicos Bloqueados (>30%): {len(cedentes_bloqueados)}")
 
 if __name__ == "__main__":
     atualizar_macroprudencial()
