@@ -54,7 +54,7 @@ class CreditRiskTrainer:
         df_processed, scaled_cols = self.prepare_data(df)
         
         # Isolar as features (variáveis target e identificadores devem ficar de fora)
-        remover_colunas = ['default', 'dias_atraso', 'id', 'cnpj', 'data', 'event', 'data_emissao', 'data_vencimento', 'pagou', 'id_boleto', 'id_pagador', 'id_beneficiario']
+        remover_colunas = ['default', 'dias_atraso', 'id', 'cnpj', 'data', 'event', 'data_emissao', 'data_vencimento', 'pagou', 'id_boleto', 'id_pagador', 'id_beneficiario', 'dt_emissao']
         features = [c for c in df_processed.columns if c not in remover_colunas]
         
         # Validar as amarras das features obrigatórias

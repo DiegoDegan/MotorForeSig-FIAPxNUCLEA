@@ -3,10 +3,30 @@ import joblib
 import shap
 import pandas as pd
 from contextlib import asynccontextmanager
-from typing import Dict, Any, List
-from fastapi import FastAPI, HTTPException, status
+from typing import Dict, Any, List, Optional
+from datetime import datetime, timedelta
+from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
-from datetime import datetime
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from dotenv import load_dotenv
+
+# Carregar variáveis de ambiente
+load_dotenv()
+
+# Configurações de Segurança (via .env)
+SECRET_KEY = os.getenv("API_SECRET_KEY", "7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f1a2b3c4d5e6f7a8b9c0d")
+ALGORITHM = os.getenv("API_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("API_ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+
+# Mock de Usuário para o MVP (Em produção, usar DB real)
+ADMIN_USER = os.getenv("API_ADMIN_USER", "admin_mfs")
+ADMIN_PASSWORD_HASH = os.getenv("API_ADMIN_PASSWORD_HASH") # Definido via script ou .env direto (para o MVP usaremos texto do .env e hashearemos)
+ADMIN_PASSWORD_RAW = os.getenv("API_ADMIN_PASSWORD", "nuclea_segura_2024")
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/token")
 
 # Configuração de Caminhos
 BASE_DIR = os.path.dirname(__file__)
@@ -108,14 +128,82 @@ class MacroMetricsResponse(BaseModel):
     dolar_comercial: float
     data_atualizacao: str
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+# =======================
+# UTILITÁRIOS SEGURANÇA
+# =======================
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Não foi possível validar as credenciais",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    
+    # Validação do usuário mock
+    if token_data.username != ADMIN_USER:
+        raise credentials_exception
+    return token_data.username
+
 # =======================
 # ENDPOINTS
 # =======================
+
+@app.post("/v1/token", response_model=Token, tags=["Auth"])
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    """
+    Gera o Token JWT para acesso aos endpoints protegidos.
+    Credenciais padrão: admin_mfs / nuclea_segura_2024 (configurável via .env)
+    """
+    # Validação simples para o MVP
+    if form_data.username != ADMIN_USER or form_data.password != ADMIN_PASSWORD_RAW:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuário ou senha incorretos",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": form_data.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/v1/health", status_code=status.HTTP_200_OK, tags=["System"])
 async def health_check():
     """
     Healthcheck otimizado para orquestradores (como Google Cloud Run e Kubernetes).
+    Endpoint aberto para monitoramento de infra.
     """
     models_status = {
         "modelo_pd": "modelo_pd" in ml_components,
@@ -129,9 +217,9 @@ async def health_check():
     }
 
 @app.get("/v1/metrics/macro", response_model=MacroMetricsResponse, tags=["Metrics"])
-async def get_macro_metrics():
+async def get_macro_metrics(current_user: str = Depends(get_current_user)):
     """
-    Retorna os últimos indicadores de mercado/BACEN cacheados.
+    [PROTEGIDO] Retorna os últimos indicadores de mercado/BACEN cacheados.
     (Utilizado pelo Dashboard para contexto macroeconômico).
     """
     if "macro_metrics" not in ml_components:
@@ -139,9 +227,9 @@ async def get_macro_metrics():
     return ml_components["macro_metrics"]
 
 @app.post("/v1/predict", response_model=PredictedRiskResponse, tags=["Scoring"])
-async def predict_risk(payload: BoletoPayload):
+async def predict_risk(payload: BoletoPayload, current_user: str = Depends(get_current_user)):
     """
-    Recebe payload de boleto com features (Grafo + Cadastro),
+    [PROTEGIDO] Recebe payload de boleto com features (Grafo + Cadastro),
     infere o risco e atraso, e calcula a justificativa SHAP em tempo real.
     """
     if "modelo_pd" not in ml_components:
