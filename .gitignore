@@ -12,3 +12,13 @@ __pycache__/
 # Configurações de IDEs
 .vscode/
 .idea/
+
+# Dados, Caches e Modelos ML
+data/processed/
+data/cache/
+backend/models/
+fluxo_ingris/planilhas_geradas/
+output*.txt
+*.joblib
+*.csv
+*.xlsx
