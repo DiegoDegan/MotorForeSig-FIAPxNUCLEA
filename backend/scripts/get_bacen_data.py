@@ -25,12 +25,22 @@ def get_bacen_data(codigo_serie, nome_serie):
             logger.info(f"Usando cache local para {nome_serie}.")
             return pd.read_csv(cache_file, parse_dates=['data'])
 
-    logger.info(f"Baixando dados da série {codigo_serie} ({nome_serie}) do BACEN...")
-    url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo_serie}/dados?formato=json"
+    try:
+        # Pega a data inicial da nossa base para não puxar séries inteiras na API e evitar Timeout e Falha de Paginação
+        df_raw = pd.read_csv('data/raw/base_boletos_fiap.csv', usecols=['dt_emissao'])
+        data_inicial = pd.to_datetime(df_raw['dt_emissao']).min().strftime('%d/%m/%Y')
+        data_final = datetime.now().strftime('%d/%m/%Y')
+    except Exception as e:
+        logger.warning(f"Aviso ao ler emissões reais ({e}). Usando fallback estático de data.")
+        data_inicial = "16/08/2019"
+        data_final = datetime.now().strftime('%d/%m/%Y')
+
+    logger.info(f"Baixando dados da série {codigo_serie} ({nome_serie}) do BACEN de {data_inicial} a {data_final}...")
+    url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo_serie}/dados?formato=json&dataInicial={data_inicial}&dataFinal={data_final}"
     
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(url, timeout=15, headers=headers, verify=False)
+        response = requests.get(url, timeout=30, headers=headers, verify=False)
         response.raise_for_status()
         
         data = response.json()

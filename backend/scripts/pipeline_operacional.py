@@ -3,6 +3,7 @@ import sys
 import logging
 import joblib
 import pandas as pd
+import yaml
 
 # Adicionar raiz no path para imports da IA
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -11,23 +12,55 @@ from backend.core.explicabilidade import RiscoExplainer
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def aplicar_politica(df_predictions):
+def carregar_politica():
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'politica_risco.yaml')
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return yaml.safe_load(f)
+    except Exception as e:
+        logger.warning(f"Não foi possivel carregar regras do YAML. Usando defaults fixos. Erro: {e}")
+        return {}
+
+def aplicar_politica(df_predictions, pol):
     """
-    Motor de Decisão (Hard Rules).
-    Transforma predições do ML em ações de negócio cravadas para a Mesa de Crédito.
+    Motor de Decisão Híbrido (IA + Hard Rules + YAML Macroprudencial).
     """
-    logger.info("Aplicando Política de Risco (Hard Rules)...")
+    logger.info("Aplicando Política de Risco (Hard Rules YAML)...")
     
     status = []
+    alertas_macro = []
+    
+    filtros = pol.get('filtros_macroprudenciais', {})
+    limites = pol.get('limites_concessao_ia', {})
+    
+    cnaes_bloqueados = [str(x) for x in filtros.get('cnaes_bloqueados_tier1', [])]
+    cnaes_alerta = [str(x) for x in filtros.get('cnaes_alerta_tier2', [])]
+    
+    pd_reprovacao = limites.get('nota_corte_reprovacao_pd', 0.70)
+    pd_mesa = limites.get('nota_encaminhamento_mesa_pd', 0.40)
+    atraso_max = limites.get('tolerancia_dias_atraso', 30)
     
     for _, row in df_predictions.iterrows():
         pd_score = row['score_pd_bruto']
         atraso_previsto = row['atraso_previsto']
         
-        # Golden Rules (Política da Empresa MFS)
-        if pd_score >= 0.70:
+        # Extrai CNAE e remove casa decimal (string match)
+        cnae = pd.to_numeric(row.get('cd_cnae_prin', 0), errors='coerce')
+        cnae_str = str(int(cnae)) if pd.notna(cnae) else "0"
+        
+        # Alerta Setorial
+        alerta_setor = f" [ALERTA MACRO] Setor CNAE {cnae_str} encontra-se em estado de atenção (Tier 2)." if cnae_str in cnaes_alerta else ""
+        alertas_macro.append(alerta_setor)
+        
+        # Regra 1: Bloqueio Macroprudencial
+        if cnae_str in cnaes_bloqueados:
+            status.append('REPROVADO_SETORES_CRITICOS')
+            continue
+            
+        # Regra 2: Score de IA da Empresa
+        if pd_score >= pd_reprovacao:
             status.append('REPROVADO_AUTO')
-        elif pd_score >= 0.40 or atraso_previsto > 30:
+        elif pd_score >= pd_mesa or atraso_previsto > atraso_max:
             status.append('ANALISE_MESA')
         elif pd_score < 0.15 and atraso_previsto < 15:
             status.append('APROVADO_AUTO')
@@ -35,6 +68,7 @@ def aplicar_politica(df_predictions):
             status.append('ANALISE_MESA')
             
     df_predictions['decisao_politica'] = status
+    df_predictions['alerta_macro'] = alertas_macro
     return df_predictions
 
 def rodar_pipeline():
@@ -77,15 +111,20 @@ def rodar_pipeline():
         df_lote['score_pd_bruto'] = scores_pd
         df_lote['atraso_previsto'] = previsoes_atraso
         
-        logger.info("5. Acionando Motor de Decisão (Hard Rules)...")
-        df_lote = aplicar_politica(df_lote)
+        logger.info("5. Acionando Motor de Decisão (Hard Rules Hibrido YAML)...")
+        politica_yaml = carregar_politica()
+        df_lote = aplicar_politica(df_lote, politica_yaml)
         
         logger.info("6. Transcrevendo SHAP AI Explainability para Business Language...")
-        # Chamamos o SHAP explicador (ele pedirá para explicar os mesmos dados)
-        # Atenção: Passamos o df_lote intacto pq o `RiscoExplainer` espera os valores brutos para relatar em Reais/Cifras corretos!
         justificativas = explicador.explicar_score(df_lote, top_n=3)
         
-        df_lote['parecer_ia_shap'] = [j['justificativa_mesa'] for j in justificativas]
+        pareceres = []
+        for j, (_, row) in zip(justificativas, df_lote.iterrows()):
+            texto_base = j['justificativa_mesa']
+            texto_final = texto_base + row['alerta_macro']
+            pareceres.append(texto_final)
+            
+        df_lote['parecer_ia_shap'] = pareceres
         
         logger.info("7. Exportando Pipeline Operacional (Dashboard/Mesa)...")
         relatorio_colunas = [
