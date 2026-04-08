@@ -22,3 +22,8 @@ output*.txt
 *.joblib
 *.csv
 *.xlsx
+
+# Exceção para Dados de Mockup (Raw)
+!data/raw/
+!data/raw/*.csv
+
