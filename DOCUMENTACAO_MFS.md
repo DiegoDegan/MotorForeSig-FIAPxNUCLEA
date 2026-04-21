@@ -46,5 +46,32 @@ No ápice do funil (`pipeline_operacional.py`), o Motor analisa as Hard Rules da
 * `[REPROVADO_CEDENTE_TOXICO]`: Cuidado, clientes desse Fornecedor possuem Risco Agudo em Massa!
 * `[REPROVADO_AUTO]`: O Machine Learning apontou que, embora o setor ou fornecedor sejam limpos, aquele boleto individual específico tem forte chance de Default.
 
-### Infraestrutura de Escalabilidade
-Todo esse robusto back-end foi preparado para ser exposto em **Endpoints (Rest API no FastAPI)** sob demanda para portais externos, conteinerizado em `Docker` pronto para decolar no GCP (Cloud Run), de modo inteiramente *Serverless* e seguro (dotEnvs).
+## 4. Arquitetura de Produção (Google Cloud Platform)
+
+A solução migrou de um ambiente puramente local para uma arquitetura **Serverless & Robust** no GCP, otimizada para o *Free Tier*:
+
+- **Backend (mfs-api):** Hospedado no **Cloud Run**. 
+    - **Sincronização de Dados:** Implementamos um gerenciador de ativos (`GCSManager`) que, no momento do boot do container, comunica-se com um Bucket privado (`gs://nuclea-mfs-assets-8138`) para baixar os modelos ML (`.joblib`) e as bases históricas de grafos e liquidez. Isso garante que a API seja *stateless* e escalável.
+    - **Segurança:** Protegida por Token JWT e variáveis de ambiente sensíveis.
+- **Frontend (mfs-dashboard):** Hospedado no **Cloud Run** via imagem Nginx customizada.
+    - **Roteamento SPA:** Configurado com `try_files` para garantir que o roteamento do React Router não quebre em caso de recarregamento de página (F5).
+    - **Comunicação:** Conecta-se à API Cloud via HTTPS seguro.
+- **Build & CI/CD:** Utilização do **Cloud Build** com manifestos YAML para automação da montagem das imagens Docker no Artifact Registry.
+
+---
+
+## 5. Endpoints e Acessos Oficiais
+
+A plataforma está operacional e disponível nos seguintes endereços:
+
+*   🌐 **Executivo Dashboard (Frontend):** [https://mfs-dashboard-243998235267.us-central1.run.app](https://mfs-dashboard-243998235267.us-central1.run.app)
+*   ⚙️ **Motor de Inteligência (API Docs):** [https://mfs-api-243998235267.us-central1.run.app/docs](https://mfs-api-243998235267.us-central1.run.app/docs)
+*   📦 **Asset Storage (Bucket GCS):** `gs://nuclea-mfs-assets-8138/data/`
+
+---
+
+## 6. Checklist de Manutenção
+Para novos treinamentos de modelo ou atualizações de base:
+1. Gerar novos `.joblib` ou `.csv` localmente.
+2. Fazer o upload para o Bucket GCS na pasta respectiva.
+3. Reiniciar o serviço `mfs-api` no Cloud Run para que o `lifespan` baixe as versões atualizadas.
