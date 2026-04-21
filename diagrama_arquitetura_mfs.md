@@ -1,6 +1,6 @@
 # 🏗️ Diagrama de Arquitetura: Motor MFS (Núclea)
 
-Mapeamento visual do fluxo de dados _end-to-end_ do projeto, desde a prospecção dos dados originais e macroeconômicos até o ponto final de entrega na API REST e Mesa de Crédito.
+Mapeamento visual do fluxo de dados _end-to-end_ do projeto, desde a prospecção dos dados originais e macroeconômicos até o ponto final de consumo no Dashboard e Mesa de Crédito Operacional.
 
 ```mermaid
 flowchart TD
@@ -11,65 +11,71 @@ flowchart TD
     classDef graphBD fill:#5E81AC,stroke:#88C0D0,stroke-width:2px,color:#FFF
     classDef mlEngine fill:#BF616A,stroke:#D08770,stroke-width:2px,color:#FFF
     classDef output fill:#A3BE8C,stroke:#8FBCBB,stroke-width:2px,color:#2E3440
+    classDef frontend fill:#EBCB8B,stroke:#D08770,stroke-width:2px,color:#2E3440
+    classDef infra fill:#4C566A,stroke:#D8DEE9,stroke-dasharray: 5 5,color:#FFF
 
-    %% Nível 1: Ingestão de Dados
-    subgraph Data Sources [1. Camada de Ingestão de Dados]
-        B[Base Boletos Transacionais]:::rawData
-        A[Base Auxiliar FIDC]:::rawData
-        BACEN((API Pública do BACEN\nSelic/IPCA)):::external
-    end
-
-    %% Nível 2: Limpeza e Grafos
-    subgraph Processing [2. Processamento de Redes e Limpeza]
-        Limp["limpeza.py\n(Tratamento Inicial)"]:::compute
-        Neo[(Neo4j AuraDB\nGraph Database)]:::graphBD
-        NetworkX["extrair_metricas_grafo.py\n(Fallback NetworkX)"]:::compute
+    subgraph GCP [Google Cloud Platform - Infraestrutura Cloud Native]
+        direction TB
         
-        B --> Limp
-        A --> Limp
-        Limp --> Neo
-        Limp --> NetworkX
-        Neo -.->|Calcula PageRank & Centralidade| NetworkX
-        NetworkX -- Extrai Total Exposed Value\nContágio ---> MergeBase
-    end
+        subgraph DataSources [1. Camada de Ingestão de Dados]
+            B[Base Boletos Transacionais]:::rawData
+            A[Base Auxiliar FIDC]:::rawData
+            BACEN((API Pública do BACEN\nSelic/IPCA)):::external
+        end
 
-    %% Nível 3: Unificação
-    subgraph Centralization [3. Centralização da Modelagem]
-        MergeBase{{"montar_base_modelagem.py\n(Merge Universal)"}}:::compute
-        BACEN --> MergeBase
-        Limp -->|Dados Tratados| MergeBase
-    end
+        subgraph ETL_Graph [2. Engenharia de Dados & Redes de Risco]
+            Limp["limpeza.py\n(Tratamento Inicial)"]:::compute
+            Neo[(Neo4j AuraDB\nGraph Database)]:::graphBD
+            NetX["extrair_metricas_grafo.py\n(Features de Contágio)"]:::compute
+            
+            B --> Limp
+            A --> Limp
+            Limp --> Neo
+            Neo -.->|Calcula PageRank & Centralidade| NetX
+            NetX -- Extrai Total Exposed Value ---> MergeBase
+        end
 
-    %% Nível 4: Machine Learning e Política YAML
-    subgraph Intelligence [4. Camada de Inteligência Preditiva]
-        Updater["atualizar_politicas_dinamicas.py\n(Auditor de Defaults)"]:::compute
-        YAML[/"politica_risco.yaml\n(Blacklist Tiers)"/]:::rawData
-        
-        Trainer["model_trainer.py\n(Random Forest PD/LGD)"]:::mlEngine
-        SHAP["explicabilidade.py\n(SHAP Explainability)"]:::mlEngine
+        subgraph Intelligence [3. Motor de Inteligência & Políticas]
+            MergeBase{{"montar_base_modelagem.py\n(Merge Universal)"}}:::compute
+            Trainer["model_trainer.py\n(Random Forest PD/LGD)"]:::mlEngine
+            SHAP["explicabilidade.py\n(SHAP & Pareceres)"]:::mlEngine
+            YAML[/"politica_risco.yaml\n(Controle Dinâmico)"/]:::rawData
+            
+            Limp --> MergeBase
+            BACEN --> MergeBase
+            MergeBase --> Trainer
+            Trainer --> SHAP
+            MergeBase --> YAML
+        end
 
-        MergeBase --> Updater --> YAML
-        MergeBase --> Trainer
-        Trainer --> SHAP
-    end
+        subgraph Backend [4. Backend Gateway - Cloud Run]
+            FastAPI{"main_rest_api.py\n(FastAPI + JWT Authentication)"}:::external
+            GCS[(Google Cloud Storage\nAsset & Model Sync)]:::infra
+            
+            Trainer -.->|Exporta .joblib| GCS
+            GCS -.->|Sincroniza Modelos| FastAPI
+            SHAP --> FastAPI
+            YAML --> FastAPI
+        end
 
-    %% Nível 5: O Operacional
-    subgraph Operational [5. Mesa de Crédito & Abertura]
-        Orquestrador(("pipeline_operacional.py\n(Motor de Decisões)")):::compute
-        REST{"main_rest_api.py\n(FastAPI Server)"}:::external
-        DashOutputs[/"pipeline_report_mesacredito.csv\n(Dashboard BI)"/]:::output
-        
-        YAML --> Orquestrador
-        Trainer -->|Previsões de Risco| Orquestrador
-        SHAP -->|Motivo Descritivo| Orquestrador
-        
-        Orquestrador --> DashOutputs
-        Orquestrador <--> REST
+        subgraph Frontend [5. Camada de Apresentação & Mesa - React]
+            Cockpit[Cockpit Portfolio\nKPIs Ativos]:::frontend
+            SysRisk[Risco Sistêmico\nForce Graph D3]:::frontend
+            CreditDesk[Mesa de Crédito\nFeedback Loop]:::frontend
+            Gov[Governança\nPerformance & Drift]:::frontend
+            
+            FastAPI <-->|JSON Data / Auth| Cockpit
+            FastAPI <-->|Relational Graph Data| SysRisk
+            FastAPI <-->|Pipeline Ops & Overrides| CreditDesk
+            FastAPI -->|Audit Logs & PSI| Gov
+        end
     end
 ```
 
 ### Entendendo a Legenda do Fluxo:
-- ⬛ **Preto/Cinza Escuro**: Bases de Origem e arquivos crus.
-- 🟦 **Azul Metálico**: Módulos Processadores de Limpeza e Cálculos de Grafo da base.
-- 🟥 **Vermelho**: A "Caixa Preta". Processamento da IA (Scikit-Learn/SHAP).
-- 🟩 **Ciano/Verde**: Endpoints Web e Arquivos Exportados Prontos (Dinheiro Blindado).
+- ⬛ **Preto/Cinza Escuro**: Bases de Origem e arquivos de configuração (YAML/CSV).
+- 🟦 **Azul Metálico**: Módulos Processadores de Limpeza e Cálculos de Grafo.
+- 🟥 **Vermelho**: Motor de IA (Training, Explainability e Inferência).
+- 🟨 **Amarelo/Ouro**: Interface de Usuário (Frontend modularizado).
+- 🟩 **Ciano/Verde**: API Gateway (FastAPI) e Pontos de Integração.
+- ⬜ **Tracejado**: Infraestrutura de suporte em nuvem (GCS/Cloud Run).
