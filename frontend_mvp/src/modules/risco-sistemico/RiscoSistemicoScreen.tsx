@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
-import { Rnd } from 'react-rnd';
 import { X, ShieldAlert } from 'lucide-react';
-import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { TopNav } from '../../components/shared';
 import { getSystemicRisk } from '../../services/api';
 
@@ -17,83 +15,7 @@ const SidePanel = ({ title, children, className = "" }: any) => (
   </div>
 );
 
-const CustomScatterShape = (props: any) => {
-  const { cx, cy, fill, stroke, strokeWidth, payload, style } = props;
-  const r = props.node?.r || props.r || 10;
 
-  return (
-    <g style={style}>
-      <circle cx={cx} cy={cy} r={r} fill={fill} stroke={stroke} strokeWidth={strokeWidth} />
-    </g>
-  );
-};
-
-const RiskBubbleChart = ({ data, onNodeHover, hoveredNodeId }: any) => {
-  const chartData = data.map((node: any) => {
-    const volume = node.total_exposed_value || 0;
-    const pageRank = node.pagerank || 0;
-
-    let fill = 'rgba(115, 243, 199, 0.2)';
-    let stroke = 'var(--color-mint)';
-
-    if (node.avg_payer_risk > 0.6) {
-      fill = 'rgba(255, 113, 98, 0.2)';
-      stroke = 'var(--color-heat)';
-    }
-
-    return {
-      ...node,
-      pageRank,
-      pageRankIndex: pageRank * 100, // Converte a probabilidade minúscula em um Índice (ex: 0.05 vira 5.0)
-      volume: volume / 1000,
-      riskPosition: node.avg_payer_risk * 100,
-      fill,
-      stroke
-    };
-  });
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-obsidian/90 border border-white/20 p-2 font-mono text-[10px] z-50">
-          <div className="text-white font-bold">{data.name}</div>
-          <div className="text-white/60">ÍNDICE INFLUÊNCIA: {data.pageRankIndex.toFixed(2)}</div>
-          <div className="text-white/60">VOLUME: {data.value}</div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  return (
-    <div className="w-full h-full relative flex flex-col">
-      <div className="flex justify-between items-center mb-2">
-        <div className="text-[10px] font-mono text-mint tracking-widest">
-          DISTRIBUIÇÃO REAL: ÍNDICE DE INFLUÊNCIA (PAGERANK SCALED) VS EXPOSIÇÃO
-        </div>
-      </div>
-
-      <div className="flex-1 w-full relative">
-        <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: -20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            {/* Domínio automático espalha os nós ao longo de todo o eixo X, evitando o achatamento no 0 */}
-            <XAxis type="number" dataKey="pageRankIndex" domain={['dataMin - 0.5', 'auto']} tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontFamily: 'monospace' }} />
-            <YAxis type="number" dataKey="riskPosition" domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontFamily: 'monospace' }} />
-            <ZAxis type="number" dataKey="volume" range={[50, 800]} />
-            <Tooltip content={<CustomTooltip />} />
-            <Scatter data={chartData} shape={<CustomScatterShape />} onMouseEnter={(e: any) => onNodeHover && onNodeHover(e.payload.id)} onMouseLeave={() => onNodeHover && onNodeHover(null)}>
-              {chartData.map((entry: any, index: number) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.stroke} strokeWidth={entry.id === hoveredNodeId ? 3 : 1} />
-              ))}
-            </Scatter>
-          </ScatterChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-};
 
 export const RiscoSistemicoScreen = () => {
   const graphContainerRef = useRef<HTMLDivElement>(null);
@@ -330,9 +252,7 @@ export const RiscoSistemicoScreen = () => {
           </div>
         </div>
 
-        <div className="min-h-[350px] h-[40vh] relative bg-obsidian border border-white/10 rounded-none p-4 shrink-0">
-          <RiskBubbleChart data={graphData.nodes} onNodeHover={setHoveredNodeId} hoveredNodeId={hoveredNodeId} />
-        </div>
+
       </div>
     </div>
   );

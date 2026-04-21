@@ -516,8 +516,8 @@ async def get_governance_metrics(current_user: str = Depends(get_current_user)):
         "auc": 0.88,
         "thresholds": {"auto": 0.025, "manual": 0.05, "exposure": 5000000},
         "km_data": [
-            {"days": 0, "probability": 1.0}, {"days": 30, "probability": 0.85},
-            {"days": 60, "probability": 0.60}, {"days": 90, "probability": 0.40}
+            {"days": d, "probability": round(0.99 ** d, 3)} 
+            for d in [0, 5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 105, 120]
         ],
         "audit_logs": [
             {"date": "2026-04-16", "user": "RISK_MANAGER", "action": "BLOCK_CNAE", "details": "9200-3/99", "reason": "Aumento severo inadimplência"},

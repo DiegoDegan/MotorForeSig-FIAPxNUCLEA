@@ -12,7 +12,11 @@ const PsiGauge = ({ value }: { value: number }) => {
   const strokeDashoffset = circumference - (percentage * circumference);
 
   return (
-    <BentoCell title="Status Global PSI" className="col-span-1 flex flex-col items-center justify-center h-[280px]">
+    <BentoCell 
+      title="Status Global PSI" 
+      tooltip="Mede a estabilidade populacional dos dados. Identifica se o comportamento atual das empresas divergiu do padrão de treinamento do modelo, sinalizando a necessidade de calibração ou retreino da IA."
+      className="col-span-1 flex flex-col items-center justify-center h-[280px]"
+    >
       <div className="relative w-48 h-24 mt-4">
         <svg className="w-full h-full overflow-visible">
           <path
@@ -50,7 +54,11 @@ const PsiGauge = ({ value }: { value: number }) => {
 
 const PerformanceCards = ({ ks, auc }: { ks: number, auc: number }) => (
   <div className="col-span-1 flex flex-col gap-4 h-[280px]">
-    <BentoCell title="Estatística KS" className="flex-1 flex flex-col justify-center">
+    <BentoCell 
+      title="Estatística KS" 
+      tooltip="Principal métrica de poder de separação. Quantifica a eficácia do modelo em distinguir entre perfis de bons e maus pagadores, garantindo a precisão na seleção de ativos."
+      className="flex-1 flex flex-col justify-center"
+    >
       <div className="flex items-end justify-between">
         <div className="text-4xl font-mono font-bold text-white">{ks.toFixed(2)}</div>
         <div className="text-[10px] font-mono text-lime mb-1">EXCELENTE</div>
@@ -59,7 +67,11 @@ const PerformanceCards = ({ ks, auc }: { ks: number, auc: number }) => (
         <div className="h-full bg-lime rounded-full w-[84%]" />
       </div>
     </BentoCell>
-    <BentoCell title="AUC-ROC" className="flex-1 flex flex-col justify-center">
+    <BentoCell 
+      title="AUC-ROC" 
+      tooltip="Representa a qualidade global das previsões. Avalia a performance do modelo em classificar corretamente o risco em diferentes níveis de corte, equilibrando a sensibilidade e a especificidade das decisões."
+      className="flex-1 flex flex-col justify-center"
+    >
       <div className="flex items-end justify-between">
         <div className="text-4xl font-mono font-bold text-white">{auc.toFixed(2)}</div>
         <div className="text-[10px] font-mono text-mint mb-1">ESTÁVEL</div>
@@ -77,10 +89,11 @@ const PolicyControl = ({ initialThresholds }: { initialThresholds: any }) => {
   const [maxExposure, setMaxExposure] = useState(initialThresholds?.exposure || 5000000);
 
   return (
-    <BentoCell title="Controle de Thresholds (Simulador YAML)" className="col-span-2 h-[280px] overflow-hidden flex flex-col">
-      <div className="absolute top-5 right-5 flex gap-2">
-        <div className="px-2 py-1 bg-heat/10 text-heat text-[10px] font-mono rounded border border-heat/20 animate-pulse">MODO RASCUNHO</div>
-      </div>
+    <BentoCell 
+      title="Controle de Thresholds (Simulador YAML)" 
+      tooltip="Simulador de políticas de crédito. Permite configurar os limites de aprovação automática e revisão manual baseados na probabilidade de default (PD) e exposição financeira total."
+      className="col-span-2 h-[280px] overflow-hidden flex flex-col"
+    >
       
       <div className="flex gap-6 mt-4 flex-1 h-full">
         <div className="flex-1 flex flex-col gap-4 font-mono text-[10px]">
@@ -144,10 +157,20 @@ const KaplanMeierChart = ({ kmData }: { kmData: any[] }) => {
   };
 
   return (
-    <BentoCell title="Curva de Sobrevivência (Kaplan-Meier)" className="col-span-2 h-[320px]">
+    <BentoCell 
+      title="Curva de Sobrevivência (Kaplan-Meier)" 
+      tooltip="Análise temporal de recebimento. Estima a probabilidade de liquidação do ativo ao longo do tempo (time-to-event), essencial para projeção de liquidez e estratégias de cobrança preventiva."
+      className="col-span-2 h-[320px]"
+    >
       <div className="mt-6 h-full w-full pb-4">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={kmData} margin={{ top: 10, right: 20, bottom: 20, left: -20 }}>
+            <defs>
+              <linearGradient id="survivalGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#73f3c7" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#ff7162" stopOpacity={0.8}/>
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
             <XAxis 
               dataKey="days" 
@@ -166,10 +189,10 @@ const KaplanMeierChart = ({ kmData }: { kmData: any[] }) => {
             <Line 
               type="stepAfter" 
               dataKey="probability" 
-              stroke="var(--color-mint)" 
-              strokeWidth={2} 
-              dot={{ r: 3, fill: 'var(--color-obsidian)', stroke: 'var(--color-mint)', strokeWidth: 2 }}
-              activeDot={{ r: 5, fill: 'var(--color-mint)', stroke: 'var(--color-obsidian)' }}
+              stroke="url(#survivalGradient)" 
+              strokeWidth={3} 
+              dot={{ r: 3, fill: '#0b0e14', stroke: 'rgba(255,255,255,0.3)', strokeWidth: 1 }}
+              activeDot={{ r: 5, fill: '#ffffff', stroke: 'var(--color-mint)' }}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -180,10 +203,11 @@ const KaplanMeierChart = ({ kmData }: { kmData: any[] }) => {
 
 const AuditLogs = ({ logs }: { logs: any[] }) => {
   return (
-    <BentoCell title="Logs de Auditoria (Governança MFS)" className="col-span-2 h-[320px]">
-      <div className="absolute top-5 right-5 flex gap-2">
-        <div className="px-2 py-1 bg-surface-high text-white/50 text-[10px] font-mono rounded border border-white/10">ÚLTIMOS EVENTOS</div>
-      </div>
+    <BentoCell 
+      title="Logs de Auditoria (Governança MFS)" 
+      tooltip="Trilha de transparência e conformidade. Registra todas as ações humanas e automáticas aplicadas ao modelo e às políticas, assegurando a rastreabilidade exigida por órgãos reguladores."
+      className="col-span-2 h-[320px]"
+    >
       <div className="mt-6 flex flex-col gap-3 overflow-y-auto h-[calc(100%-2rem)] pr-2">
         {logs.map((log, idx) => (
           <div key={idx} className="bg-obsidian/50 border border-white/5 p-3 rounded text-[10px] font-mono flex flex-col gap-1">
