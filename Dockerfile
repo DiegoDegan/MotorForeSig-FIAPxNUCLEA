@@ -1,38 +1,33 @@
-# Imagem base enxuta com Python 3.11
+# Stage 1: Build & Python Setup
 FROM python:3.11-slim
 
-# Variáveis para otimizar o Python em contêineres e o gestor de pacotes
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+# Evitar que o Python gere arquivos .pyc e garantir output em tempo real nos logs do GCP
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
-# Configurar diretório de trabalho
 WORKDIR /app
 
-# Instalar dependências essenciais de sistema (necessárias para XGBoost, Pandas, etc.)
-# Realiza a limpeza de cache do apt na mesma camada para reduzir o tamanho final da imagem
+# Instalar dependências de sistema (necessárias para algumas libs de ML se houver compilação)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Aproveitar cache de camadas do Docker: Copiar dependências primeiro
+# Copiar requirements e instalar
 COPY requirements.txt .
-
-# Instalar pacotes Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Segurança: Criar e usar um usuário não-root (Cloud Run Best Practices)
-RUN addgroup --system appgroup && adduser --system --group appuser \
-    && chown -R appuser:appgroup /app
-USER appuser
+# Copiar o código do backend
+COPY backend/ /app/backend/
 
-# Copiar todo o código-fonte restante do projeto (ETL, Core, Pipeline)
-COPY . .
+# Criar diretórios que o lifespan tentará sincronizar se não existirem
+RUN mkdir -p /app/backend/models /app/data/processed /app/data/raw
 
-# Expor a porta que o Cloud Run usa por padrão
+# Definir variável de ambiente para o gCloud SDK encontrar as credenciais no Cloud Run
+# (O Cloud Run injeta a Service Account automaticamente, mas setamos os caminhos base)
+ENV PYTHONPATH=/app/backend
+
+# Porta padrão do Cloud Run
 EXPOSE 8080
 
-# Subir a aplicação via Uvicorn (FastAPI) de forma performática
-CMD ["uvicorn", "backend.core.main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Comando para rodar a API usando uvicorn com workers para concorrência
+CMD ["uvicorn", "backend.main_rest_api:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "2"]

@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8000/v1";
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000") + "/v1";
 
 // For MVP, we can hardcode the credentials from the documentation or just fetch if no auth is strictly enforced during local dev.
 // The backend requires a token for getting portfolio summary and credit pipeline.

@@ -1,0 +1,17 @@
+.git
+.venv
+node_modules
+Análises
+Planilhas MVP atual
+old_version
+fluxo_ingris
+scripts
+data
+backend/models/*.joblib
+backend/scripts
+**/node_modules
+.env
+.gitignore
+.dockerignore
+.vscode
+__pycache__

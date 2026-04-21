@@ -13,9 +13,13 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 import networkx as nx
 from dotenv import load_dotenv
+from core.gcs_manager import GCSManager
 
 # Carregar variáveis de ambiente
 load_dotenv(encoding="latin-1")
+
+# Instanciar Gerenciador de Cloud Storage
+gcs = GCSManager()
 
 # Configurações de Segurança (via .env)
 SECRET_KEY = os.getenv("API_SECRET_KEY", "7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f1a2b3c4d5e6f7a8b9c0d")
@@ -63,6 +67,18 @@ async def lifespan(app: FastAPI):
     do servidor para garantir latência baixa nos requests.
     """
     try:
+        # Sincronização de ativos se estiver em Cloud/GCP
+        if gcs.bucket:
+            print("INFO: Sincronizando ativos do Google Cloud Storage...")
+            assets = {
+                "models/modelo_pd.joblib": MODEL_PD_PATH,
+                "models/modelo_atraso.joblib": MODEL_ATRASO_PATH,
+                "data/pipeline_report_mesacredito.csv": PIPELINE_CSV,
+                "data/grafo_features_mfs.csv": GRAFO_CSV,
+                "data/base_auxiliar_fiap.csv": BASE_AUX_CSV
+            }
+            gcs.sync_initial_assets(assets)
+
         # Cache BACEN metrics (mock - pode ser substituído por consulta ao DB ou API real)
         ml_components["macro_metrics"] = {
             "selic": 10.75,

@@ -69,10 +69,6 @@ class GCSManager:
     def upload_decision_log(self, prediction_id: str, decision_data: Dict[str, Any]) -> bool:
         """
         Função B: Armazenamento de "Decision Logs" individuais (JSON) para cada predição da API.
-        
-        Args:
-            prediction_id: ID único da predição/operação.
-            decision_data: Dicionário contendo os dados da requisição, scores e justificativas.
         """
         if not self.bucket:
             logger.error("Bucket não configurado. Upload do log de decisão cancelado.")
@@ -80,7 +76,6 @@ class GCSManager:
 
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            # Salva num subdiretório decision_logs agrupado opcionalmente por dia
             agrupamento_diario = datetime.now().strftime("%Y-%m-%d")
             destination_blob_name = f"decision_logs/{agrupamento_diario}/{timestamp}_{prediction_id}.json"
             
@@ -94,3 +89,40 @@ class GCSManager:
         except Exception as e:
             logger.error(f"Erro ao salvar o log de decisão no GCS: {e}")
             return False
+
+    def download_asset(self, blob_name: str, local_path: str) -> bool:
+        """
+        Função C: Download de ativos (modelos, bases) do GCS para o ambiente local/container.
+        """
+        if not self.bucket:
+            logger.error(f"Bucket não conectado. Falha ao baixar {blob_name}")
+            return False
+
+        try:
+            # Criar diretório pai se não existir
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            
+            blob = self.bucket.blob(blob_name)
+            if not blob.exists():
+                logger.warning(f"O ativo {blob_name} não existe no bucket.")
+                return False
+                
+            blob.download_to_filename(local_path)
+            logger.info(f"Ativo {blob_name} baixado com sucesso para {local_path}")
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao baixar ativo do GCS: {e}")
+            return False
+
+    def sync_initial_assets(self, assets_mapping: Dict[str, str]):
+        """
+        Função D: Sincronização em massa de arquivos necessários para o boot da aplicação.
+        Ex: {"assets/modelo_pd.joblib": "/app/models/modelo_pd.joblib"}
+        """
+        logger.info("Iniciando sincronização de ativos de inicialização...")
+        results = []
+        for blob_name, local_path in assets_mapping.items():
+            success = self.download_asset(blob_name, local_path)
+            results.append(success)
+        
+        return all(results)
