@@ -106,6 +106,21 @@ export const getSystemicRisk = async () => {
   }
 };
 
+export interface PipelineOperation {
+  id_boleto: string;
+  cedente: string;
+  cedente_id: string;
+  sacado_nome_fantasia: string;
+  valor_nominal: number;
+  score_pd: number;
+  valor_esperado_perda: number;
+  acao_sugerida: string;
+  justificativa_mesa: { name: string; value: number }[];
+  cedente_exposicao: number;
+  risco_contagio: boolean;
+}
+
+
 export const getGovernanceMetrics = async () => {
   try {
     const response = await fetchWithAuth("/governance/metrics");
@@ -116,3 +131,21 @@ export const getGovernanceMetrics = async () => {
     return null;
   }
 };
+
+export const recordOperationAction = async (id_boleto: string, action: string, reason: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/credit/operations/action`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${CACHED_TOKEN}`
+      },
+      body: JSON.stringify({ id_boleto, action, reason })
+    });
+    return response.ok;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+};
+

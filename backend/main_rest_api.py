@@ -169,12 +169,20 @@ class PortfolioSummaryResponse(BaseModel):
 class PipelineOperation(BaseModel):
     id_boleto: str
     cedente: str
+    cedente_id: str
     sacado_nome_fantasia: str
     valor_nominal: float
     score_pd: float
     valor_esperado_perda: float
     acao_sugerida: str
     justificativa_mesa: List[Dict[str, Any]]
+    cedente_exposicao: float
+    risco_contagio: bool
+
+class OverrideAction(BaseModel):
+    id_boleto: str
+    action: str
+    reason: str
 
 class SystemicRiskNode(BaseModel):
     id: str
@@ -665,23 +673,64 @@ async def get_portfolio_summary(risk_band: Optional[str] = None, current_user: s
 async def get_credit_pipeline(current_user: str = Depends(get_current_user)):
     """
     [PROTEGIDO] Retorna a fila de operações lendo o pipeline_report real.
+    Injeta contexto de exposição e risco sistêmico.
     """
     try:
         df = pd.read_csv(PIPELINE_CSV)
+        df_grafo = pd.read_csv(GRAFO_CSV)
+        
         # Filtrar apenas o topo para a mesa não travar o browser
         df = df.head(50)
         
         results = []
         for _, row in df.iterrows():
-            # Parse real do Parecer SHAP (String para lista de pesos)
+            # 1. Mapeamento Semântico do SHAP (Tradução de Variáveis p/ Negócio)
             parecer = str(row.get('parecer_ia_shap', ''))
             factors = []
+            
+            # Categorias de Negócio para Mapeamento
+            mapping = {
+                "ATRASO": "PONTUALIDADE HISTÓRICA",
+                "BAIXA": "HISTÓRICO PONTUALIDADE",
+                "VLR": "MATERIALIDADE / VALOR",
+                "SETOR": "RISCO SETORIAL",
+                "MATERIALIDADE": "EXPOSIÇÃO RELATIVA",
+                "LIQUIDEZ": "SAÚDE FINANCEIRA",
+                "PAGERANK": "CONECTIVIDADE REDE",
+                "DEGREE": "CAPILARIDADE",
+                "TEMPO": "ZONA DE CONFIANÇA",
+                "SCORE": "SCORE CRÉDITO"
+            }
+            
             if "|" in parecer:
                 parts = parecer.split("|")
                 for p in parts:
                     name_part = p.split("'")[1] if "'" in p else "INDICADOR"
+                    # Traduzir para nome amigável de negócio
+                    friendly_name = "OUTROS"
+                    for key, val in mapping.items():
+                        if key in name_part.upper():
+                            friendly_name = val
+                            break
+                            
                     impact = 0.45 if "aumentou" in p else -0.35
-                    factors.append({"name": name_part.upper(), "value": impact})
+                    factors.append({"name": friendly_name, "value": impact})
+            
+            # 2. Contexto de Exposição e Contágio
+            cedente_id = str(row['id_beneficiario'])
+            sacado_id = str(row['id_pagador'])
+            
+            # Simulação de Exposição Acumulada (No MVP: soma local ou valor fixo + valor atual)
+            # Em produção: consulta no Neo4j/SQl
+            base_exposure = 1250000.0 # Mock de exposição anterior
+            
+            # Verificação de Risco de Contágio (Se o pagador tem alto PageRank no Grafo)
+            is_contagion_risk = False
+            if not df_grafo.empty:
+                pagador_data = df_grafo[df_grafo['id_pagador'] == row['id_pagador']]
+                if not pagador_data.empty:
+                    pr = pagador_data.iloc[0].get('pagador_pagerank', 0)
+                    is_contagion_risk = pr > 0.6
             
             # Mapear status
             acao = row.get('decisao_politica', 'MESA_ANALISE')
@@ -690,18 +739,30 @@ async def get_credit_pipeline(current_user: str = Depends(get_current_user)):
 
             results.append({
                 "id_boleto": str(row['id_boleto'])[:10],
-                "cedente": f"CED_{str(row['id_beneficiario'])[:6].upper()}",
-                "sacado_nome_fantasia": f"SAC_{str(row['id_pagador'])[:6].upper()}",
+                "cedente": f"CED_{cedente_id[:6].upper()}",
+                "cedente_id": cedente_id,
+                "sacado_nome_fantasia": f"SAC_{sacado_id[:6].upper()}",
                 "valor_nominal": float(row['vlr_nominal']),
                 "score_pd": float(row['score_pd_bruto']),
                 "valor_esperado_perda": float(row['perda_esperada_el']),
                 "acao_sugerida": acao,
-                "justificativa_mesa": factors if factors else [{"name": "PONTUALIDADE", "value": -0.1}]
+                "justificativa_mesa": factors if factors else [{"name": "PERFIL OPERACIONAL", "value": -0.1}],
+                "cedente_exposicao": base_exposure,
+                "risco_contagio": is_contagion_risk
             })
         return results
     except Exception as e:
         print(f"ERROR: credit pipeline failure: {e}")
         return []
+
+@app.post("/v1/credit/operations/action", tags=["Operations"])
+async def record_operation_action(action: OverrideAction, current_user: str = Depends(get_current_user)):
+    """
+    [PROTEGIDO] Registra ações de aprovação/rejeição com justificativa (Feedback Loop).
+    No MVP: Apenas simula o recebimento e loga no console.
+    """
+    print(f"AUDIT LOG: {current_user} performed {action.action} on {action.id_boleto}. Reason: {action.reason}")
+    return {"status": "success", "message": f"Ação {action.action} registrada com sucesso."}
 
 if __name__ == "__main__":
     import uvicorn
