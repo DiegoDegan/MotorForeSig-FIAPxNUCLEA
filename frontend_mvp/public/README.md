@@ -14,4 +14,4 @@ O frontend está configurado para ser entregue via **Cloud Run (Serverless)**.
 - **Configuração de Roteamento:** Fallback para `index.html` ativado para suporte a Single Page Application (SPA).
 
 ---
-*Documentação atualizada em: 21 de Abril de 2026*
+*Documentação atualizada em: 09 de Maio de 2026*

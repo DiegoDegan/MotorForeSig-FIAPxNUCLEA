@@ -10,7 +10,7 @@ O projeto abandona as planilhas estáticas e une **Inteligência Artificial (Mac
 Se você quiser entender a profundidade das peças do Motor, verifique os documentos contidos nesta base:
 - `DOCUMENTACAO_MFS.md`: Explicação em linguagem de negócio de como a máquina opera.
 - `diagrama_arquitetura_mfs.md`: A arquitetura visual mapeando os pipelines Python.
-- `analise_insights_prototipo_vs_mvp.md`: Auditoria que comprova a economia milionária do MVP protegendo as bordas contábeis.
+- `GUIA_DATA_INSIGHTS_MFS.md`: Guia de consumo das planilhas e auditoria de insights do MVP.
 
 ---
 
@@ -73,4 +73,4 @@ O projeto está configurado para escalabilidade total no **Google Cloud Platform
 Para gerenciar o deploy, utilize os arquivos `cloudbuild-frontend.yaml` e as rotinas de containerização descritas no capítulo de infraestrutura da `DOCUMENTACAO_MFS.md`.
 
 ---
-*MFS - Inteligência de Crédito & Redes Complexas - v1.2.0*
+*MFS - Inteligência de Crédito & Redes Complexas - v1.3.0*

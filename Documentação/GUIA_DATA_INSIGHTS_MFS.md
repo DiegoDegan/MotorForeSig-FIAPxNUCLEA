@@ -8,7 +8,7 @@ Este documento serve como bússola para o time de Front-end, BI e Mesa de Crédi
 
 ### 📄 `pipeline_report_mesacredito.xlsx`
 O arquivo mais importante para o dia a dia do FIDC. Ele contém o veredito da IA para cada boleto.
-*   **Campos Chave:** `score_pd` (IA), `perda_esperada_el` (R$), `justificativa_mesa` (SHAP).
+*   **Campos Chave:** `score_pd_bruto` (IA), `perda_esperada_el` (R$), `parecer_ia_shap` (SHAP).
 *   **💡 Sugestão de Insight:** Filtrar boletos "Reprovados" com EL alto para auditoria manual imediata.
 *   **📈 Gráfico Sugerido:** Histograma de distribuição de Scores por Volume Financeiro (R$).
 
@@ -60,4 +60,4 @@ Configurações de "Hard Rules" (CNAEs banidos e Notas de Corte).
 
 ---
 
-**Gerado pelo Motor ForeSig em: 05/04/2026**
+**Gerado pelo Motor ForeSig em: 09/05/2026**

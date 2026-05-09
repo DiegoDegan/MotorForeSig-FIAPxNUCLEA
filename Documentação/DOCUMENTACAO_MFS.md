@@ -1,5 +1,5 @@
 # 🖥️ Documentação Oficial: Motor MFS (MVP - Núclea)
-**Motor de Risco ForeSig - *Data-Driven & Graph-Based Credit Risk***
+> **Motor de Risco ForeSig - *Data-Driven & Graph-Based Credit Risk***
 
 ## 1. O que Construímos?
 Substituímos uma esteira de análise de crédito puramente relacional (planilhas) por um **Motor Preditivo Híbrido** que opera em Múltiplas Dimensões. Ele não avalia apenas a "saúde" do credor, mas lê a **temperatura macroeconômica** do país, o **contágio financeiro** da rede de fornecedores e traduz matemáticas complexas em textos inteligíveis para a Mesa Operacional de forma autônoma.
@@ -75,3 +75,8 @@ Para novos treinamentos de modelo ou atualizações de base:
 1. Gerar novos `.joblib` ou `.csv` localmente.
 2. Fazer o upload para o Bucket GCS na pasta respectiva.
 3. Reiniciar o serviço `mfs-api` no Cloud Run para que o `lifespan` baixe as versões atualizadas.
+---
+
+**Versão da Documentação:** 1.3.0  
+**Última Atualização:** 09/05/2026  
+**Status do Projeto:** MVP Operacional (Cloud Ready)

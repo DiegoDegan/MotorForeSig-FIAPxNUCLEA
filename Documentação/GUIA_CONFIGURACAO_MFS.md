@@ -82,4 +82,5 @@ Tudo pronto! Para testar se o motor de IA está funcionando:
 -   **Extensão de Python**: O VS Code vai sugerir instalar a extensão "Python" da Microsoft. Clique em **Instalar**.
 -   **Arquivos CSV**: Se quiser ver as planilhas, procure na pasta `data/raw/` ou `data/processed/`.
 
-**Dúvidas?** Chame o Diego no Slack/WhatsApp!
+**Dúvidas?** Chame o Diego no Slack/WhatsApp!  
+*Atualizado em: 09/05/2026*
