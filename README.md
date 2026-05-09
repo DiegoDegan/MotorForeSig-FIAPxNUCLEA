@@ -10,7 +10,7 @@ O projeto abandona as planilhas estáticas e une **Inteligência Artificial (Mac
 Se você quiser entender a profundidade das peças do Motor, verifique os documentos contidos nesta base:
 - `DOCUMENTACAO_MFS.md`: Explicação em linguagem de negócio de como a máquina opera.
 - `diagrama_arquitetura_mfs.md`: A arquitetura visual mapeando os pipelines Python.
-- `analise_insights_prototipo_vs_mvp.md`: Auditoria que comprova a economia milionária do MVP protegendo as bordas contábeis.
+- `GUIA_DATA_INSIGHTS_MFS.md`: Guia de consumo das planilhas e auditoria de insights do MVP.
 
 ---
 
@@ -64,10 +64,13 @@ uvicorn backend.main_rest_api:app --host 0.0.0.0 --port 8080 --reload
 ```
 Acesse `http://localhost:8080/docs` no seu navegador para utilizar o **Swagger UI** da ML API.
 
-### 🛡️ Autenticação (Novidade)
-A partir da versão atual, os endpoints de predição e métricas estão protegidos.
-1. No Swagger UI, localize o botão **"Authorize"** no topo.
-2. Insira as credenciais padrão:
-   - **Username:** `admin_mfs`
-   - **Password:** `nuclea_segura_2024`
-3. Após clicar em "Login", todos os cadeados das rotas se fecharão e você poderá realizar as chamadas de Risco normalmente.
+### ☁️ Produção e Nuvem (GCP)
+O projeto está configurado para escalabilidade total no **Google Cloud Platform (GCP)** em arquitetura serverless:
+
+*   🌐 **Live Dashboard:** [https://mfs-dashboard-243998235267.us-central1.run.app](https://mfs-dashboard-243998235267.us-central1.run.app)
+*   ⚙️ **API de Produção:** [https://mfs-api-243998235267.us-central1.run.app/docs](https://mfs-api-243998235267.us-central1.run.app/docs)
+
+Para gerenciar o deploy, utilize os arquivos `cloudbuild-frontend.yaml` e as rotinas de containerização descritas no capítulo de infraestrutura da `DOCUMENTACAO_MFS.md`.
+
+---
+*MFS - Inteligência de Crédito & Redes Complexas - v1.3.0*

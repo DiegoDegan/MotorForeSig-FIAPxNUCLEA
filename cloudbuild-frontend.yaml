@@ -1,0 +1,5 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/nuclea-mfs-mvp-8138/mfs-frontend', '-f', 'frontend_mvp/Dockerfile', '.']
+images:
+- 'gcr.io/nuclea-mfs-mvp-8138/mfs-frontend'
