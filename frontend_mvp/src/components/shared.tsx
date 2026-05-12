@@ -1,34 +1,27 @@
 import React from 'react';
-import { Bell, Calendar, User, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 
-export const BentoCell = ({ children, title, status = 'mint', className = '', icon: Icon, tooltip }: any) => {
-  const statusColors: any = {
-    mint: 'bg-mint',
-    lime: 'bg-lime',
-    heat: 'bg-heat',
-    none: 'bg-transparent'
-  };
-
+export const BentoCell = ({ children, title, className = '', icon: Icon, tooltip, extra }: any) => {
   return (
     <div className={`relative bg-surface border border-white/5 p-5 rounded-lg ${className}`}>
-      {status !== 'none' && (
-        <div className={`absolute top-4 right-4 w-2 h-2 rounded-full ${statusColors[status]}`} />
-      )}
 
       {title && (
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            {Icon && <Icon className="w-4 h-4 text-white/50" />}
-            <h3 className="text-[10px] text-white/50 uppercase tracking-[0.1em] font-mono">
-              {title.replace(/_/g, ' ')}
-            </h3>
+        <div className="flex items-center justify-between mb-4 w-full">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              {Icon && <Icon className="w-4 h-4 text-white/50" />}
+              <h3 className="text-[10px] text-white/50 uppercase tracking-[0.1em] font-mono">
+                {title.replace(/_/g, ' ')}
+              </h3>
+            </div>
+            {extra}
           </div>
           
           {tooltip && (
             <div className="group relative">
               <Info className="w-5 h-5 text-white/20 hover:text-mint transition-colors cursor-help" />
               <div className="absolute top-0 right-7 w-64 bg-black/50 backdrop-blur-md border border-white/10 p-4 rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-[100] translate-x-2 group-hover:translate-x-0">
-                <p className="text-[12px] font-mono leading-relaxed text-white/90 normal-case tracking-normal">
+                <p className="text-sm font-mono leading-relaxed text-white/90 normal-case tracking-normal">
                   {tooltip}
                 </p>
               </div>
@@ -69,33 +62,12 @@ export const MFSLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
 );
 
 export const TopNav = ({ title, subtitle }: { title: string, subtitle: string }) => (
-  <header className="flex items-center justify-between mb-8">
-    <div>
-      <div className="flex items-center gap-2 mb-0.5">
-        <span className="text-[10px] font-mono text-mint tracking-widest uppercase">{subtitle.replace(/_/g, ' ')}</span>
-      </div>
-      <h1 className="text-3xl font-display font-bold text-white tracking-wide uppercase">
-        {title.replace(/_/g, ' ')}
-      </h1>
-    </div>
-
-    <div className="flex items-center gap-8">
-      <div className="flex gap-6 font-mono text-[10px] text-white/60 text-right">
-        {/* Status/Updates removidos conforme solicitação */}
-      </div>
-
-      <div className="flex items-center gap-4 border-l border-white/10 pl-8">
-        <button className="text-white/50 hover:text-white transition-colors relative">
-          <Bell className="w-5 h-5" />
-          <span className="absolute -top-1 -right-1 w-2 h-2 bg-heat rounded-full" />
-        </button>
-        <button className="text-white/50 hover:text-white transition-colors">
-          <Calendar className="w-5 h-5" />
-        </button>
-        <button className="w-8 h-8 bg-surface-high border border-white/10 rounded-lg flex items-center justify-center text-white/50 hover:text-white transition-colors">
-          <User className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  </header>
+  <div className="mb-8">
+    <span className="text-[10px] font-mono text-mint tracking-widest uppercase block mb-0.5">
+      {subtitle.replace(/_/g, ' ')}
+    </span>
+    <h1 className="text-xl font-display font-bold text-white tracking-wide uppercase">
+      {title.replace(/_/g, ' ')}
+    </h1>
+  </div>
 );

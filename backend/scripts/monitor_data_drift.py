@@ -40,7 +40,7 @@ def run_drift_monitoring():
     df = pd.read_csv(base_file)
     
     # Features sensíveis que costumam 'drifar' e quebrar o modelo
-    features_monitoramento = ['taxa_selic_emissao', 'vlr_nominal', 'pagerank_vizinhanca', 'diff_selic_30d']
+    features_monitoramento = ['vlr_nominal', 'pagerank_vizinhanca']
     
     # Para o MVP, simularemos o 'Treino' como a primeira metade da base e o 'Atual' como a segunda
     split = len(df) // 2

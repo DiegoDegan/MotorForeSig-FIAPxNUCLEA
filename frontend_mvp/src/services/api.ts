@@ -66,10 +66,24 @@ export interface PortfolioSummary {
   recommended_actions: string[];
   top_exposures: {
     entity: string;
-    exposure: string;
+    exposure: number;
     risk: string;
     color: string;
   }[];
+  // Tela 1 — Visão Geral
+  vme: number;
+  ticket_medio: number;
+  volume_baixa: number;
+  inadimplencia_pct: number;
+  cnpjs_ativos: number;
+  status_labels: string[];
+  status_data: number[];
+  monthly_chart: { mes: string; no_prazo: number; com_atraso: number }[];
+  score_materialidade_media: number;
+  hhi_setorial: number;
+  top_pagadores_pareto: { id: string; valor: number; acumulado_pct: number }[];
+  liquidez_por_setor: { setor: string; liquidez: number }[];
+  exposicao_por_uf: { uf: string; valor: number }[];
 }
 
 export const getPortfolioSummary = async (riskBand?: string): Promise<PortfolioSummary | null> => {
@@ -121,6 +135,51 @@ export interface PipelineOperation {
 }
 
 
+export interface PDSummary {
+  el_total: number;
+  pd_media: number;
+  lgd_media: number;
+  provisao_sugerida: number;
+  el_por_faixa: { faixa: string; el: number; pd_media: number; count: number }[];
+  scatter_data: { id: string; exposicao: number; pd: number; el: number }[];
+  el_por_uf: { uf: string; el: number; pd_media: number; count: number }[];
+}
+
+export const getPDSummary = async (): Promise<PDSummary | null> => {
+  try {
+    const response = await fetchWithAuth("/pd/summary");
+    if (!response.ok) throw new Error("Failed to fetch PD summary");
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+export interface PoliticaSummary {
+  taxa_aprovacao: number;
+  taxa_rejeicao: number;
+  capital_preservado: number;
+  falso_positivo_pct: number;
+  el_economizado: number;
+  impact_curve: { threshold: number; receita_pct: number; inadimplencia_pct: number; n_aprovado: number }[];
+  heatmap_data: { score_bin: string; liq_bin: string; default_rate: number; count: number; atraso_medio: number }[];
+  heatmap_score_bins: string[];
+  heatmap_liq_bins: string[];
+  contagio_curve: { tol: number; pagerank_threshold: number; n_blocked: number; valor_blocked: number; el_blocked: number }[];
+}
+
+export const getPoliticaSummary = async (): Promise<PoliticaSummary | null> => {
+  try {
+    const response = await fetchWithAuth("/politica/summary");
+    if (!response.ok) throw new Error("Failed to fetch politica summary");
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
 export const getGovernanceMetrics = async () => {
   try {
     const response = await fetchWithAuth("/governance/metrics");
@@ -129,6 +188,26 @@ export const getGovernanceMetrics = async () => {
   } catch (error) {
     console.error(error);
     return null;
+  }
+};
+
+export interface PipelineReportItem {
+  id_boleto: string;
+  id_pagador: string;
+  vlr_nominal: number;
+  score_pd: number;
+  perda_el: number;
+  decisao: string; // APROVADO_AUTO | ANALISE_MESA | REPROVADO_*
+}
+
+export const getPipelineReport = async (): Promise<PipelineReportItem[]> => {
+  try {
+    const response = await fetchWithAuth("/pipeline/report");
+    if (!response.ok) throw new Error("Failed to fetch pipeline report");
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+    return [];
   }
 };
 

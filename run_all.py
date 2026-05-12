@@ -4,9 +4,6 @@ import os
 
 scripts = [
     "backend/scripts/limpeza.py",
-    "backend/scripts/upload_neo4j.py",
-    "backend/scripts/extrair_metricas_grafo.py",
-    "backend/scripts/get_bacen_data.py",
     "backend/scripts/montar_base_modelagem.py",
     "backend/scripts/atualizar_politicas_dinamicas.py",
     "backend/core/model_trainer.py",
@@ -27,5 +24,5 @@ for script in scripts:
         sys.exit(1)
         
 print("\n" + "="*60)
-print("TODAS AS ETAPAS FORAM EXECUTADAS COM SUCESSO! A IA ESTÁ TREINADA COM A ECONOMIA REAL.")
+print("TODAS AS ETAPAS FORAM EXECUTADAS COM SUCESSO! A IA ESTÁ TREINADA COM DADOS REAIS (RAW).")
 print("="*60)

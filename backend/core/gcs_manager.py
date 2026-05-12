@@ -3,7 +3,11 @@ import json
 import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
-from google.cloud import storage
+try:
+    from google.cloud import storage as _gcs_storage
+except ImportError:
+    _gcs_storage = None  # GCS indisponível — modo local sem cloud
+storage = _gcs_storage
 
 # Configuração básica de logging
 logging.basicConfig(level=logging.INFO)

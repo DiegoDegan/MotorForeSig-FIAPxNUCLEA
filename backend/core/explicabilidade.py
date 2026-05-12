@@ -85,10 +85,8 @@ class RiscoExplainer:
                     razoes.append(f"A conectividade sistêmica da empresa na rede (PageRank: {valor_operacional:.4f}) {direcao} substancialmente o risco de contágio")
                 elif 'centrality' in feature_name.lower():
                     razoes.append(f"O número de conexões com outras empresas (Centralidade: {valor_operacional:.0f}) {direcao} o risco")
-                elif 'selic' in feature_name.lower():
-                    razoes.append(f"O cenário de juros e sua volatilidade (SELIC atual: {valor_operacional:.2f}) {direcao} a pressão sobre as margens (risco macro)")
                 elif 'ipca' in feature_name.lower():
-                    razoes.append(f"A inflação do período (IPCA: {valor_operacional:.2f}) {direcao} a incerteza inflacionária")
+                    razoes.append(f\"A inflação do período (IPCA: {valor_operacional:.2f}) {direcao} a incerteza inflacionária\")
                 elif 'valor' in feature_name.lower() or 'vlr_nominal' in feature_name.lower():
                     razoes.append(f"A magnitude financeira/ticket da transação (R$ {valor_operacional:,.2f}) {direcao} a exposição ao risco")
                 else:
@@ -114,7 +112,6 @@ if __name__ == "__main__":
     df_teste = pd.DataFrame({
         'valor_boleto': np.random.uniform(500, 50000, tamanho),
         'taxa_risco': np.random.uniform(0.01, 0.08, tamanho),
-        'selic_volatilidade_30d': np.random.uniform(10.5, 13.5, tamanho),
         'ipca_acumulado': np.random.uniform(3.0, 5.0, tamanho),
         'pagerank_vizinhanca': np.random.uniform(0, 1, tamanho),
         'degree_centrality': np.random.randint(1, 20, tamanho)

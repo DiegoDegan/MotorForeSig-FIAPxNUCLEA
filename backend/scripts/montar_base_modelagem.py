@@ -34,9 +34,9 @@ def montar_base_modelagem():
             logger.warning("grafo_features_mfs.csv não encontrado. Merge será feito sem features de rede.")
             df_grafo = pd.DataFrame()
             
-        # 4. Obter Dados Macro BACEN
-        logger.info("Obtendo dados atualizados do BACEN...")
-        df_selic, df_ipca = process_bacen_data()
+        # 4. (REMOVIDO) Obter Dados Macro BACEN
+        #logger.info("Obtendo dados atualizados do BACEN...")
+        #df_selic, df_ipca = process_bacen_data()
         
         # --- MERGES ---
         logger.info("Iniciando merges...")
@@ -51,35 +51,12 @@ def montar_base_modelagem():
         )
         df_modelo.drop(columns=["id_cnpj"], inplace=True, errors="ignore")
         
-        # Merge 2: Boletos + Features de Grafo
-        if not df_grafo.empty:
-            # Seleciona apenas as colunas que vieram do grafo, se preocupando em não duplicar ids
-            colunas_grafo = [col for col in df_grafo.columns if col not in ['id_pagador', 'id_beneficiario']]
-            df_modelo = pd.merge(
-                df_modelo,
-                df_grafo[colunas_grafo],
-                on="id_boleto",
-                how="left"
-            )
-            # Imputação de nulos caso algum nó não estivesse no grafo
-            df_modelo.fillna({'pagador_pagerank': 0.0, 'beneficiario_pagerank': 0.0, 
-                              'pagador_degree': 0.0, 'beneficiario_degree': 0.0}, inplace=True)
-                              
-        # Merge 3: Macro BACEN (Sincronizado na linha de tempo pela janela de emissão)
-        df_modelo = df_modelo.sort_values('dt_emissao')
-        df_selic = df_selic.sort_values('data')
+        # Merge 2: (REMOVIDO) Boletos + Features de Grafo
+        # if not df_grafo.empty:
+        #     ...
         
-        df_modelo = pd.merge_asof(
-            df_modelo, 
-            df_selic[['data', 'valor', 'diff_selic_30d']], 
-            left_on='dt_emissao', 
-            right_on='data', 
-            direction='backward'
-        )
-        
-        # Renomeia para fazer sentido com o contexto de treino do MFS
-        df_modelo.rename(columns={'valor': 'taxa_selic_emissao'}, inplace=True)
-        df_modelo.drop(columns=['data'], inplace=True, errors="ignore")
+        # Merge 3: (REMOVIDO) Macro BACEN
+        # df_modelo = pd.merge_asof(...)
         
         # Limpezas Finais antes do ML (substituir tipos textuais e converter IDs)
         # Guardaremos os identificadores para poder saber de que boleto estamos falando na esteira operacional.

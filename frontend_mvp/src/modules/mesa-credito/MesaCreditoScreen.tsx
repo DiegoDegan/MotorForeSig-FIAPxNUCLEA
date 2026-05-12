@@ -3,7 +3,7 @@ import { X, Download, AlertTriangle, ShieldCheck, ChevronRight } from 'lucide-re
 import { TopNav, BentoCell, SegmentedBar } from '../../components/shared';
 import { getCreditPipeline, recordOperationAction, PipelineOperation } from '../../services/api';
 
-const ShapDrawer = ({ operation, onClose, onAction }: { operation: PipelineOperation, onClose: () => void, onAction: (action: string, reason: string) => void }) => {
+const ShapDrawer = ({ operation, onClose, onAction, limit }: { operation: PipelineOperation, onClose: () => void, onAction: (action: string, reason: string) => void, limit: number }) => {
   const [showReasonBox, setShowReasonBox] = useState<string | null>(null);
   const [selectedReason, setSelectedReason] = useState("");
 
@@ -11,7 +11,7 @@ const ShapDrawer = ({ operation, onClose, onAction }: { operation: PipelineOpera
 
   const factors = operation.justificativa_mesa || [];
   const totalWithBoleto = operation.cedente_exposicao + operation.valor_nominal;
-  const LIMIT = 5000000; // Fond limit from Governance
+  const LIMIT = limit || 5000000;
   const limitPercentage = (totalWithBoleto / LIMIT) * 100;
 
   const reasons = [
@@ -34,7 +34,7 @@ const ShapDrawer = ({ operation, onClose, onAction }: { operation: PipelineOpera
     <div className="w-[420px] bg-surface border border-white/5 rounded-lg flex flex-col h-[calc(100vh-6rem)] sticky top-8 shadow-2xl overflow-hidden animate-in slide-in-from-right-8 duration-300 z-50">
       <div className="p-6 border-b border-white/5 flex justify-between items-start bg-surface-high/50">
         <div>
-          <h2 className="text-lg font-display font-bold text-mint tracking-wider">INTELIGÊNCIA DE CRÉDITO</h2>
+          <h2 className="text-sm font-display font-bold text-mint tracking-wider">INTELIGÊNCIA DE CRÉDITO</h2>
           <div className="text-[10px] font-mono text-white/50 mt-1">CONTEXTO CEDENTE: {operation.cedente}</div>
         </div>
         <button onClick={onClose} className="text-white/40 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10">
@@ -46,20 +46,20 @@ const ShapDrawer = ({ operation, onClose, onAction }: { operation: PipelineOpera
         {/* Termômetro de Exposição */}
         <div className="mb-8">
           <div className="flex justify-between items-end mb-2">
-            <h3 className="text-[10px] font-mono text-white/50 uppercase tracking-widest">TERMÔMETRO DE EXPOSIÇÃO DO CEDENTE</h3>
-            <span className={`text-[10px] font-mono font-bold ${limitPercentage > 80 ? 'text-heat' : 'text-mint'}`}>
+            <h3 className="text-xs font-mono text-white/50 uppercase tracking-widest">TERMÔMETRO DE EXPOSIÇÃO DO CEDENTE</h3>
+            <span className={`text-xs font-mono font-bold ${limitPercentage > 80 ? 'text-heat' : 'text-mint'}`}>
               {limitPercentage.toFixed(1)}%
             </span>
           </div>
           <div className="bg-obsidian border border-white/5 rounded-lg p-5">
             <div className="flex flex-col gap-2 mb-4">
-              <div className="flex justify-between text-[10px] font-mono">
+              <div className="flex justify-between text-xs font-mono">
                 <span className="text-white/40">EXPOSIÇÃO ATUAL</span>
                 <span className="text-white">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(operation.cedente_exposicao)}
                 </span>
               </div>
-              <div className="flex justify-between text-[10px] font-mono">
+              <div className="flex justify-between text-xs font-mono">
                 <span className="text-mint">+ NOVO BOLETO</span>
                 <span className="text-mint">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(operation.valor_nominal)}
@@ -76,15 +76,15 @@ const ShapDrawer = ({ operation, onClose, onAction }: { operation: PipelineOpera
                     }} 
                />
             </div>
-            <div className="flex justify-between mt-2 text-[9px] font-mono text-white/30">
+            <div className="flex justify-between mt-2 text-[10px] font-mono text-white/30">
               <span>R$ 0</span>
-              <span>LIMITE R$ 5.0M</span>
+              <span>LIMITE R$ {(LIMIT / 1000000).toFixed(1)}M</span>
             </div>
           </div>
         </div>
 
         <div className="mb-2 flex justify-between items-end">
-          <h3 className="text-[10px] font-mono text-white/50 uppercase tracking-widest">PERFIL DE RISCO (SHAP CATEGORIZADO)</h3>
+          <h3 className="text-xs font-mono text-white/50 uppercase tracking-widest">PERFIL DE RISCO (SHAP CATEGORIZADO)</h3>
         </div>
         
         <div className="bg-obsidian border border-white/5 rounded-lg p-5 mb-8">
@@ -94,7 +94,7 @@ const ShapDrawer = ({ operation, onClose, onAction }: { operation: PipelineOpera
             
             return (
               <div key={idx} className="mb-5 last:mb-0">
-                <div className="flex justify-between text-[10px] font-mono mb-2">
+                <div className="flex justify-between text-xs font-mono mb-2">
                   <span className="text-white/70 uppercase">{factor.name}</span>
                   <span className={isPositive ? 'text-heat' : 'text-mint'}>
                     {isPositive ? 'CONTRA' : 'A FAVOR'}
@@ -119,8 +119,8 @@ const ShapDrawer = ({ operation, onClose, onAction }: { operation: PipelineOpera
           <div className="bg-heat/10 border border-heat/30 p-4 rounded-lg flex gap-3 mb-8">
             <AlertTriangle className="w-5 h-5 text-heat shrink-0" />
             <div>
-              <div className="text-[10px] font-mono font-bold text-heat uppercase">Alerta de Risco Sistêmico</div>
-              <p className="text-[10px] text-white/60 leading-relaxed mt-1 font-mono">
+              <div className="text-xs font-mono font-bold text-heat uppercase">Alerta de Risco Sistêmico</div>
+              <p className="text-xs text-white/60 leading-relaxed mt-1 font-mono">
                 Este sacado possui alta conectividade em redes de contágio detectadas. A inadimplência pode propagar para outros 5+ cedentes.
               </p>
             </div>
@@ -131,21 +131,21 @@ const ShapDrawer = ({ operation, onClose, onAction }: { operation: PipelineOpera
       <div className="p-6 border-t border-white/5 bg-surface-high/30 flex flex-col gap-3 relative">
         {showReasonBox && (
           <div className="absolute inset-x-0 bottom-full bg-surface-high border-t border-white/10 p-6 animate-in slide-in-from-bottom-4 duration-200">
-             <div className="text-[10px] font-mono text-white/50 mb-3 uppercase tracking-widest text-center">Justificativa de Decisão</div>
+             <div className="text-xs font-mono text-white/50 mb-3 uppercase tracking-widest text-center">Justificativa de Decisão</div>
              <select 
                value={selectedReason} 
                onChange={(e) => setSelectedReason(e.target.value)}
-               className="w-full bg-obsidian border border-white/10 text-white font-mono text-[10px] p-3 rounded-lg mb-4 outline-none focus:border-mint/50"
+               className="w-full bg-obsidian border border-white/10 text-white font-mono text-xs p-3 rounded-lg mb-4 outline-none focus:border-mint/50"
              >
                <option value="">SELECIONE UM MOTIVO...</option>
                {reasons.map(r => <option key={r} value={r}>{r}</option>)}
              </select>
              <div className="flex gap-2">
-               <button onClick={() => setShowReasonBox(null)} className="flex-1 py-2 text-[10px] font-mono text-white/40 hover:text-white">CANCELAR</button>
+               <button onClick={() => setShowReasonBox(null)} className="flex-1 py-2 text-xs font-mono text-white/40 hover:text-white">CANCELAR</button>
                <button 
                  onClick={handleConfirm}
                  disabled={!selectedReason}
-                 className="flex-1 py-2 bg-mint text-obsidian font-mono font-bold text-[10px] rounded disabled:opacity-30"
+                 className="flex-1 py-2 bg-mint text-obsidian font-mono font-bold text-xs rounded disabled:opacity-30"
                >
                  CONFIRMAR AÇÃO
                </button>
@@ -156,13 +156,13 @@ const ShapDrawer = ({ operation, onClose, onAction }: { operation: PipelineOpera
         <div className="flex gap-3">
           <button 
             onClick={() => setShowReasonBox("REPROVAR")}
-            className="flex-1 py-3 bg-heat/20 border border-heat/30 text-heat font-display font-bold tracking-widest rounded-lg hover:bg-heat hover:text-obsidian transition-colors text-[11px]"
+            className="flex-1 py-3 bg-heat/20 border border-heat/30 text-heat font-display font-bold tracking-widest rounded-lg hover:bg-heat hover:text-obsidian transition-colors text-[10px]"
           >
             REPROVAR
           </button>
           <button 
             onClick={() => setShowReasonBox("APROVAR")}
-            className="flex-1 py-3 bg-mint/20 border border-mint/30 text-mint font-display font-bold tracking-widest rounded-lg hover:bg-mint hover:text-obsidian transition-colors text-[11px]"
+            className="flex-1 py-3 bg-mint/20 border border-mint/30 text-mint font-display font-bold tracking-widest rounded-lg hover:bg-mint hover:text-obsidian transition-colors text-[10px]"
           >
             {operation.acao_sugerida === 'BLOQUEAR' ? 'APROVAR OVERRIDE' : 'APROVAR AUTO'}
           </button>
@@ -175,11 +175,17 @@ const ShapDrawer = ({ operation, onClose, onAction }: { operation: PipelineOpera
 export const MesaCreditoScreen = () => {
   const [selectedOp, setSelectedOp] = useState<PipelineOperation | null>(null);
   const [data, setData] = useState<PipelineOperation[]>([]);
+  const [governance, setGovernance] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
-    const result = await getCreditPipeline();
-    if (result) setData(result);
+    const [pipelineResult, govResult] = await Promise.all([
+      getCreditPipeline(),
+      import('../../services/api').then(m => m.getGovernanceMetrics())
+    ]);
+    
+    if (pipelineResult) setData(pipelineResult);
+    if (govResult) setGovernance(govResult);
     setLoading(false);
   };
 
@@ -213,22 +219,23 @@ export const MesaCreditoScreen = () => {
         <TopNav title="MESA DE CRÉDITO" subtitle="OPERACIONAL / PIPELINE" />
         
         <div className="flex gap-4 mb-6">
-          <div className="px-4 py-2 bg-obsidian-light border border-white/10 text-white/50 font-mono text-[10px] rounded-lg flex items-center gap-2">
+          <div className="px-4 py-2 bg-obsidian-light border border-white/10 text-white/50 font-mono text-xs rounded-lg flex items-center gap-2">
             <span className="text-mint font-bold">{data.length}</span> OPERAÇÕES PENDENTES
           </div>
           <div className="flex-1" />
           <div className="flex gap-4 items-center">
-             <div className="text-[10px] font-mono text-white/30 flex items-center gap-2">
-               <ShieldCheck className="w-3 h-3 text-mint" /> IA AUTO-GOVERNADA ATIVA
+             <div className="text-xs font-mono text-white/30 flex items-center gap-2 bg-white/5 px-3 py-2 rounded-lg border border-white/5">
+               <ShieldCheck className="w-3 h-3 text-mint" /> 
+               <span>POLÍTICA ATIVA: <span className="text-mint font-bold">POL_SIM_DRAFT</span></span>
              </div>
           </div>
         </div>
 
         <BentoCell status="none" className="min-h-[calc(100vh-16rem)] overflow-hidden flex flex-col p-0 border border-white/5">
           <div className="overflow-y-auto flex-1 custom-scrollbar">
-            <table className="w-full text-left font-mono text-[11px] border-collapse relative">
+            <table className="w-full text-left font-mono text-[10px] border-collapse relative">
               <thead className="sticky top-0 bg-surface-high z-10">
-                <tr className="text-white/30 border-b border-white/5 uppercase tracking-tighter">
+                <tr className="text-white/30 border-b border-white/5 uppercase tracking-tighter text-[10px]">
                   <th className="py-4 font-normal px-4 w-12"></th>
                   <th className="py-4 font-normal px-2">ID BOLETO</th>
                   <th className="py-4 font-normal px-2">SACADO / PAGADOR</th>
@@ -258,7 +265,7 @@ export const MesaCreditoScreen = () => {
                       <td className="py-4 px-2">
                         <div className="flex flex-col">
                            <span className="text-white/80">{row.sacado_nome_fantasia}</span>
-                           <span className="text-[9px] text-white/30">{row.cedente}</span>
+                           <span className="text-[10px] text-white/30">{row.cedente}</span>
                         </div>
                       </td>
                       <td className="py-4 px-2 text-right font-mono text-white/90">
@@ -277,7 +284,7 @@ export const MesaCreditoScreen = () => {
                       </td>
                       <td className="py-4 px-2 pl-6">
                         <div className="flex items-center gap-3">
-                          <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-bold tracking-widest ${
+                          <span className={`px-2 py-0.5 rounded-[4px] text-[10px] font-bold tracking-widest ${
                             isBlocked ? 'bg-heat/20 text-heat border border-heat/30' : 
                             'bg-mint/20 text-mint border border-mint/30'
                           }`}>
@@ -302,6 +309,7 @@ export const MesaCreditoScreen = () => {
           operation={selectedOp} 
           onClose={() => setSelectedOp(null)} 
           onAction={handleAction}
+          limit={governance?.thresholds?.exposure}
         />
       )}
     </div>

@@ -1,70 +1,74 @@
 import React, { useState } from 'react';
-import { Terminal, LayoutDashboard, ShieldAlert, Crosshair, Activity, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShieldAlert, Crosshair, Activity, PieChart, Bell, User, ClipboardList } from 'lucide-react';
 import { MFSLogo } from './components/shared';
 import { CockpitScreen } from './modules/cockpit/CockpitScreen';
-import { MesaCreditoScreen } from './modules/mesa-credito/MesaCreditoScreen';
+import { PoliticaRejeicaoScreen } from './modules/politica-rejeicao/PoliticaRejeicaoScreen';
 import { RiscoSistemicoScreen } from './modules/risco-sistemico/RiscoSistemicoScreen';
 import { GovernancaScreen } from './modules/governanca/GovernancaScreen';
+import { ConcentracaoScreen } from './modules/concentracao/ConcentracaoScreen';
+import { PDPerdaEstimadaScreen } from './modules/pd-perda/PDPerdaEstimadaScreen';
 
-const Sidebar = ({ activePage, setActivePage }: { activePage: string, setActivePage: (page: string) => void }) => (
-  <aside className="w-20 fixed left-0 top-0 bottom-0 bg-surface-high border-r border-white/5 flex flex-col items-center py-6 z-50">
-    <div className="mb-12">
-      <MFSLogo className="w-[58px] h-[58px]" />
-    </div>
-    
-    <nav className="flex flex-col gap-8 flex-1">
-      <button 
-        onClick={() => setActivePage('cockpit')}
-        className={`p-3 rounded-lg relative group transition-colors ${activePage === 'cockpit' ? 'bg-mint/10 text-mint' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-      >
-        {activePage === 'cockpit' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-mint rounded-r-md" />}
-        <LayoutDashboard className="w-6 h-6" />
-      </button>
-      <button 
-        onClick={() => setActivePage('mesa')}
-        className={`p-3 rounded-lg relative group transition-colors ${activePage === 'mesa' ? 'bg-mint/10 text-mint' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-      >
-        {activePage === 'mesa' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-mint rounded-r-md" />}
-        <ShieldAlert className="w-6 h-6" />
-      </button>
-      <button 
-        onClick={() => setActivePage('risco')}
-        className={`p-3 rounded-lg relative group transition-colors ${activePage === 'risco' ? 'bg-mint/10 text-mint' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-      >
-        {activePage === 'risco' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-mint rounded-r-md" />}
-        <Crosshair className="w-6 h-6" />
-      </button>
-      <button 
-        onClick={() => setActivePage('gov')}
-        className={`p-3 rounded-lg relative group transition-colors ${activePage === 'gov' ? 'bg-mint/10 text-mint' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
-      >
-        {activePage === 'gov' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-mint rounded-r-md" />}
-        <Activity className="w-6 h-6" />
-      </button>
-    </nav>
-    
-    <div className="flex flex-col gap-6">
-      <button className="p-3 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-        <Settings className="w-6 h-6" />
-      </button>
-      <button className="p-3 text-white/40 hover:text-heat hover:bg-heat/10 rounded-lg transition-colors">
-        <LogOut className="w-6 h-6" />
-      </button>
-    </div>
-  </aside>
-);
+const pages = [
+  { id: 'cockpit',      label: 'Visão Geral',        icon: LayoutDashboard },
+  { id: 'risco',        label: 'Risco de Rede',       icon: Crosshair       },
+  { id: 'pd',           label: 'PD & Perda Estimada', icon: Activity        },
+  { id: 'concentracao', label: 'Concentração',        icon: PieChart        },
+  { id: 'mesa',         label: 'Política de Rejeição', icon: ShieldAlert     },
+  { id: 'governanca',   label: 'Governança',          icon: ClipboardList   },
+];
 
 export default function App() {
   const [activePage, setActivePage] = useState('cockpit');
 
   return (
-    <div className="min-h-screen bg-obsidian text-white flex">
-      <Sidebar activePage={activePage} setActivePage={setActivePage} />
-      <main className="flex-1 ml-20 p-8 min-w-0">
-        {activePage === 'cockpit' ? <CockpitScreen /> : 
-         activePage === 'mesa' ? <MesaCreditoScreen /> : 
-         activePage === 'risco' ? <RiscoSistemicoScreen /> :
-         <GovernancaScreen />}
+    <div className="min-h-screen bg-obsidian text-white flex flex-col">
+      {/* ── Global Top Navigation ── */}
+      <header className="fixed top-0 left-0 right-0 bg-surface border-b border-white/5 z-50">
+
+        {/* Row 1 — Brand */}
+        <div className="flex items-center gap-4 px-8 h-[58px] border-b border-white/5">
+          <MFSLogo className="w-[50px] h-[50px] shrink-0" />
+          <span className="flex-1 text-[20px] font-dm font-bold text-white tracking-widest">
+            MotorForeSig — Motor de Visão Antecipada
+          </span>
+          <div className="flex items-center gap-4 shrink-0">
+            <button className="text-white/50 hover:text-white transition-colors relative">
+              <Bell className="w-5 h-5" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-heat rounded-full" />
+            </button>
+            <button className="w-9 h-9 bg-surface-high border border-white/10 rounded-lg flex items-center justify-center text-white/50 hover:text-white transition-colors">
+              <User className="w-[18px] h-[18px]" />
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2 — Navigation tabs */}
+        <nav className="flex items-center gap-1.5 px-8 h-[52px] overflow-x-auto no-scrollbar">
+          {pages.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActivePage(id)}
+              className={`flex items-center gap-2.5 px-5 py-2 rounded-lg text-[14px] font-display font-bold tracking-wide whitespace-nowrap uppercase transition-all ${activePage === id
+                ? 'bg-mint/10 text-mint border border-mint/20'
+                : 'text-white/40 hover:text-white/80 hover:bg-white/5 border border-transparent'
+                }`}
+            >
+              <Icon className="w-[18px] h-[18px] shrink-0" />
+              {label}
+            </button>
+          ))}
+        </nav>
+
+      </header>
+
+      {/* Page content — offset = row1 (58px) + row2 (52px) */}
+      <main className="flex-1 mt-[110px] p-8 min-w-0">
+        {activePage === 'cockpit'      && <CockpitScreen />}
+        {activePage === 'risco'        && <RiscoSistemicoScreen />}
+        {activePage === 'pd'           && <PDPerdaEstimadaScreen />}
+        {activePage === 'mesa'         && <PoliticaRejeicaoScreen />}
+        {activePage === 'concentracao' && <ConcentracaoScreen />}
+        {activePage === 'governanca'   && <GovernancaScreen />}
       </main>
     </div>
   );

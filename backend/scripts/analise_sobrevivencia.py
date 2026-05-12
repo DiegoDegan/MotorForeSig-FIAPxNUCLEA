@@ -17,7 +17,7 @@ def run_survival_analysis():
     df = pd.read_csv(base_file)
     
     # Criar grupos de risco (para comparação de curvas)
-    # Grupo A: Risco IA Alto (usaremos a lógica de proxy - Ex: quem tem Pagerank alto ou Selic alta)
+    # Grupo A: Risco IA Alto (usaremos a lógica de proxy - Ex: quem tem Pagerank alto ou Exposição alta)
     # Para este MVP, vamos criar um 'Grupo de Risco' baseado no vlr_nominal e atraso historico
     df['grupo_risco'] = 'Baixo Risco'
     # Proxy: boletos de alto valor (exposição) ou setores ja marcados

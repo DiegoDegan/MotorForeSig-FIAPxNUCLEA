@@ -2,6 +2,8 @@ import os
 import joblib
 import shap
 import pandas as pd
+import numpy as np
+import wandb
 from contextlib import asynccontextmanager
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
@@ -45,9 +47,10 @@ ml_components = {}
 
 # Caminhos de Dados Reais
 DATA_PROCESSED_DIR = os.path.join(BASE_DIR, "..", "data", "processed")
-PIPELINE_CSV = os.path.join(DATA_PROCESSED_DIR, "pipeline_report_mesacredito.csv")
-GRAFO_CSV = os.path.join(DATA_PROCESSED_DIR, "grafo_features_mfs.csv")
-BASE_AUX_CSV = os.path.join(BASE_DIR, "..", "data", "raw", "base_auxiliar_fiap.csv")
+PIPELINE_CSV   = os.path.join(DATA_PROCESSED_DIR, "pipeline_report_mesacredito.csv")
+GRAFO_CSV      = os.path.join(DATA_PROCESSED_DIR, "grafo_features_mfs.csv")
+BOLETOS_CSV    = os.path.join(DATA_PROCESSED_DIR, "base_boletos_tratados.csv")
+BASE_AUX_CSV   = os.path.join(DATA_PROCESSED_DIR, "base_auxiliar_tratada.csv")
 
 def get_risk_band(pd_score: float) -> str:
     """Classifica a pontuação (Probability of Default) em faixas de risco."""
@@ -75,13 +78,13 @@ async def lifespan(app: FastAPI):
                 "models/modelo_atraso.joblib": MODEL_ATRASO_PATH,
                 "data/pipeline_report_mesacredito.csv": PIPELINE_CSV,
                 "data/grafo_features_mfs.csv": GRAFO_CSV,
-                "data/base_auxiliar_fiap.csv": BASE_AUX_CSV
+                "data/base_auxiliar_fiap.csv": BASE_AUX_CSV,
+                "data/base_boletos_tratados.csv": BOLETOS_CSV,
             }
             gcs.sync_initial_assets(assets)
 
-        # Cache BACEN metrics (mock - pode ser substituído por consulta ao DB ou API real)
+        # Cache Macro metrics (mock)
         ml_components["macro_metrics"] = {
-            "selic": 10.75,
             "ipca_acumulado": 4.5,
             "dolar_comercial": 5.15,
             "data_atualizacao": datetime.utcnow().isoformat()
@@ -155,7 +158,6 @@ class PredictedRiskResponse(BaseModel):
     shap_justificativa: Dict[str, float]
 
 class MacroMetricsResponse(BaseModel):
-    selic: float
     ipca_acumulado: float
     dolar_comercial: float
     data_atualizacao: str
@@ -181,6 +183,42 @@ class PortfolioSummaryResponse(BaseModel):
     rejection_labels: List[str]
     rejection_data: List[int]
     recommended_actions: List[str]
+    # ── Tela 1: Visão Geral ──
+    vme: float
+    ticket_medio: float
+    volume_baixa: float
+    inadimplencia_pct: float
+    cnpjs_ativos: int
+    status_labels: List[str]
+    status_data: List[int]
+    monthly_chart: List[Dict[str, Any]]
+    score_materialidade_media: float
+    # ── Tela 5: Concentração ──
+    hhi_setorial: float
+    top_pagadores_pareto: List[Dict[str, Any]]
+    liquidez_por_setor: List[Dict[str, Any]]
+    exposicao_por_uf: List[Dict[str, Any]]
+
+class PDSummaryResponse(BaseModel):
+    el_total: float
+    pd_media: float
+    lgd_media: float
+    provisao_sugerida: float
+    el_por_faixa: List[Dict[str, Any]]
+    scatter_data: List[Dict[str, Any]]
+    el_por_uf: List[Dict[str, Any]]
+
+class PoliticaSummaryResponse(BaseModel):
+    taxa_aprovacao: float
+    taxa_rejeicao: float
+    capital_preservado: float
+    falso_positivo_pct: float
+    el_economizado: float
+    impact_curve: List[Dict[str, Any]]
+    heatmap_data: List[Dict[str, Any]]
+    heatmap_score_bins: List[str]
+    heatmap_liq_bins: List[str]
+    contagio_curve: List[Dict[str, Any]]
 
 class PipelineOperation(BaseModel):
     id_boleto: str
@@ -240,6 +278,8 @@ class GovernanceMetricsResponse(BaseModel):
     thresholds: Dict[str, Any]
     km_data: List[Dict[str, Any]]
     audit_logs: List[Dict[str, Any]]
+    calibration: Dict[str, Any]
+    model_info: Dict[str, Any]
 
 # =======================
 # UTILITÁRIOS SEGURANÇA
@@ -531,21 +571,60 @@ async def get_systemic_risk(current_user: str = Depends(get_current_user)):
 @app.get("/v1/governance/metrics", response_model=GovernanceMetricsResponse, tags=["Dashboard"])
 async def get_governance_metrics(current_user: str = Depends(get_current_user)):
     """
-    [PROTEGIDO] Retorna métricas reais de governança e logs de auditoria.
+    [PROTEGIDO] Retorna métricas reais de governança integradas ao Weights & Biases (W&B).
     """
-    # Em um cenário real, estas métricas viriam de um monitor de performance (MLflow/GCS)
+    # Valores de fallback
+    psi_val, ks_val, auc_val = 0.082, 0.42, 0.88
+    exp_def, obs_def = 0.048, 0.051
+    
+    try:
+        api = wandb.Api()
+        project_name = os.getenv("WANDB_PROJECT", "nuclea-mfs-risk")
+        runs = api.runs(project_name, order="-created_at")
+        
+        if len(runs) > 0:
+            latest_run = runs[0]
+            psi_val = float(latest_run.summary.get("psi", psi_val))
+            ks_val = float(latest_run.summary.get("ks_stat", ks_val))
+            auc_val = float(latest_run.summary.get("auc_roc", auc_val))
+            exp_def = float(latest_run.summary.get("expected_default", exp_def))
+            obs_def = float(latest_run.summary.get("observed_default", obs_def))
+    except Exception as e:
+        print(f"Erro ao buscar métricas do W&B: {e}")
+
     return {
-        "psi": 0.082,
-        "ks": 0.42,
-        "auc": 0.88,
+        "psi": psi_val,
+        "ks": ks_val,
+        "auc": auc_val,
         "thresholds": {"auto": 0.025, "manual": 0.05, "exposure": 5000000},
+        "calibration": {
+            "expected": exp_def,
+            "observed": obs_def,
+            "status": "CALIBRADO" if abs(exp_def - obs_def) < 0.02 else "RECALIBRAR"
+        },
+        "model_info": {
+            "version": "v2.4.1",
+            "type": "RandomForest + GraphML",
+            "last_train": "11-05-2026",
+            "next_retrain": "10-06-2026"
+        },
         "km_data": [
-            {"days": d, "probability": round(0.99 ** d, 3)} 
-            for d in [0, 5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 105, 120]
+            {"days": 0, "probability": 1.000},
+            {"days": 2, "probability": 0.450},
+            {"days": 5, "probability": 0.250},
+            {"days": 10, "probability": 0.180},
+            {"days": 20, "probability": 0.140},
+            {"days": 30, "probability": 0.120},
+            {"days": 45, "probability": 0.100},
+            {"days": 60, "probability": 0.090},
+            {"days": 62, "probability": 0.020},
+            {"days": 75, "probability": 0.015},
+            {"days": 90, "probability": 0.010},
+            {"days": 120, "probability": 0.005}
         ],
         "audit_logs": [
-            {"date": "2026-04-16", "user": "RISK_MANAGER", "action": "BLOCK_CNAE", "details": "9200-3/99", "reason": "Aumento severo inadimplência"},
-            {"date": "2026-04-10", "user": "SYS_AUTO", "action": "UPDATE_THRESHOLD", "details": "max_exp -> 5M", "reason": "Ajuste trimestral"}
+            {"date": "16-04-2026", "user": "RISK_MANAGER", "action": "BLOCK_CNAE", "details": "9200-3/99", "reason": "Aumento severo inadimplência"},
+            {"date": "10-04-2026", "user": "SYS_AUTO", "action": "UPDATE_THRESHOLD", "details": "max_exp -> 5M", "reason": "Ajuste trimestral"}
         ]
     }
 
@@ -614,6 +693,27 @@ async def get_portfolio_summary(risk_band: Optional[str] = None, current_user: s
         cnae_labels = setor_dist.index.tolist()
         cnae_data = [round(v, 2) for v in setor_dist.values.tolist()]
 
+        # 4.1 Concentração Setorial (HHI)
+        total_exposed_v = sum(cnae_data) if cnae_data else 1.0
+        hhi_setorial = sum([((v / total_exposed_v) * 100)**2 for v in cnae_data])
+
+        # 4.2 Pareto de Pagadores (Usando o pipeline para manter foco em operações recentes se desejado, 
+        # mas conforme o pedido de UF, vamos centralizar os cálculos macro abaixo usando df_boletos_full)
+        pagador_dist = df_merged.groupby('id_pagador')['vlr_nominal'].sum().sort_values(ascending=False).head(10)
+        cum_p = 0
+        top_pagadores_pareto = []
+        for pid, val in pagador_dist.items():
+            cum_p += val
+            top_pagadores_pareto.append({
+                "id": str(pid),
+                "valor": round(val, 2),
+                "acumulado_pct": round((cum_p / total_exposed) * 100, 1)
+            })
+
+        # Os cálculos de Liquidez e UF serão movidos para baixo para usar df_boletos (visão macro)
+        liquidez_por_setor = []
+        exposicao_por_uf = []
+
         # 5. Estatísticas de Rejeição
         # Pegar apenas os reprovados
         df_repro = df_pipeline[df_pipeline['decisao_politica'].str.contains('REPROVADO', na=False)]
@@ -659,6 +759,80 @@ async def get_portfolio_summary(risk_band: Optional[str] = None, current_user: s
                 "color": "text-rose" if val > 50000 else "text-lime"
             })
 
+        # 8. Métricas Tela 1 (Visão Geral) e Visão Macro de Concentração
+        df_boletos = pd.read_csv(BOLETOS_CSV)
+
+        # Merge completo para visão macro de UF e Liquidez
+        df_macro = df_boletos.merge(
+            df_aux[['id_cnpj', 'uf', 'cd_cnae_prin', 'score_materialidade_v2', 'indicador_liquidez_quantitativo_3m']],
+            left_on='id_pagador', right_on='id_cnpj', how='left'
+        )
+        df_macro['setor'] = df_macro['cd_cnae_prin'].apply(map_cnae)
+        df_macro['uf'] = df_macro['uf'].fillna('N/A').replace('', 'N/A')
+
+        score_materialidade_media = float(df_macro['score_materialidade_v2'].mean()) if not df_macro.empty else 0.0
+
+        # Cálculo UF — exclui N/A (pagadores sem match na base auxiliar)
+        df_aberto = df_macro[df_macro['dt_pagamento'].isna() & (df_macro['uf'] != 'N/A')]
+        uf_dist_macro = df_aberto.groupby('uf')['vlr_nominal'].sum().sort_values(ascending=False).head(10)
+        exposicao_por_uf = [{"uf": str(uf), "valor": round(val, 2)} for uf, val in uf_dist_macro.items() if val > 0]
+
+        # Cálculo Liquidez por Setor (Visão macro da base de sacados)
+        setor_liq_macro = df_macro.groupby('setor')['indicador_liquidez_quantitativo_3m'].mean().fillna(0).sort_values(ascending=True)
+        liquidez_por_setor = [{"setor": str(s), "liquidez": round(float(l), 3)} for s, l in setor_liq_macro.items()]
+
+        vme = float(df_boletos[df_boletos['dt_pagamento'].isna()]['vlr_nominal'].sum())
+        ticket_medio = float(df_boletos['vlr_nominal'].mean()) if not df_boletos.empty else 0.0
+        volume_baixa = float(df_boletos['vlr_baixa'].sum())
+
+        total_vlr_bol = df_boletos['vlr_nominal'].sum() or 1
+        default_vlr   = df_boletos[df_boletos['default'] == 1]['vlr_nominal'].sum()
+        inadimplencia_pct = float(default_vlr / total_vlr_bol * 100)
+
+        cnpjs_ativos = int(pd.concat([df_boletos['id_pagador'], df_boletos['id_beneficiario']]).nunique())
+
+        no_prazo = int(((df_boletos['pagou'] == 1) & (df_boletos['dias_atraso'] <= 0)).sum())
+        atrasado = int(((df_boletos['pagou'] == 1) & (df_boletos['dias_atraso'] > 0)).sum())
+        pendente  = int((df_boletos['pagou'] == 0).sum())
+        status_labels = ['No Prazo', 'Atrasado', 'Pendente']
+        status_data   = [no_prazo, atrasado, pendente]
+
+        # 9. Gráfico de Barras Empilhadas Mensal
+        df_bol = df_boletos.copy()
+        df_bol['dt_vencimento'] = pd.to_datetime(df_bol['dt_vencimento'], errors='coerce')
+        df_bol['dt_pagamento']  = pd.to_datetime(df_bol['dt_pagamento'],  errors='coerce')
+
+        # Apenas boletos já pagos
+        df_pagos = df_bol[df_bol['dt_pagamento'].notna()].copy()
+        df_pagos = df_pagos.copy()
+        df_pagos['status_pagamento'] = (
+            df_pagos['dt_pagamento'] <= df_pagos['dt_vencimento']
+        ).map({True: 'no_prazo', False: 'com_atraso'})
+
+        # Agrupa por mês de PAGAMENTO (quando o dinheiro entrou de fato)
+        df_pagos['mes_pagamento'] = df_pagos['dt_pagamento'].dt.to_period('M').astype(str)
+
+        grp = (
+            df_pagos
+            .groupby(['mes_pagamento', 'status_pagamento'])['vlr_nominal']
+            .sum()
+            .unstack(fill_value=0)
+            .reset_index()
+        )
+        for col in ['no_prazo', 'com_atraso']:
+            if col not in grp.columns:
+                grp[col] = 0.0
+
+        grp = grp.sort_values('mes_pagamento')
+        monthly_chart = [
+            {
+                "mes":        row['mes_pagamento'],
+                "no_prazo":   round(float(row['no_prazo']),   2),
+                "com_atraso": round(float(row['com_atraso']), 2),
+            }
+            for _, row in grp.iterrows()
+        ]
+
         return {
             "psi_global": 0.082,
             "total_exposed_value": total_exposed,
@@ -666,23 +840,43 @@ async def get_portfolio_summary(risk_band: Optional[str] = None, current_user: s
             "avg_delay": round(avg_delay, 1),
             "avg_liquidity": round(avg_liquidity, 3),
             "drift_alerts": 2,
-            "scatter_points": [], # Desativado conforme pedido (risco conectado)
+            "scatter_points": [],
             "top_exposures": top_exposures,
             "cnae_labels": cnae_labels,
             "cnae_data": cnae_data,
             "rejection_labels": rejection_labels,
             "rejection_data": rejection_data,
-            "recommended_actions": recommended_actions
+            "recommended_actions": recommended_actions,
+            # Tela 1
+            "vme": round(vme, 2),
+            "ticket_medio": round(ticket_medio, 2),
+            "volume_baixa": round(volume_baixa, 2),
+            "inadimplencia_pct": round(inadimplencia_pct, 2),
+            "cnpjs_ativos": cnpjs_ativos,
+            "status_labels": status_labels,
+            "status_data": status_data,
+            "monthly_chart": monthly_chart,
+            "score_materialidade_media": round(score_materialidade_media, 1),
+            "hhi_setorial": float(hhi_setorial),
+            "top_pagadores_pareto": top_pagadores_pareto,
+            "liquidez_por_setor": liquidez_por_setor,
+            "exposicao_por_uf": exposicao_por_uf
         }
     except Exception as e:
         print(f"ERROR: dashboard summary failure: {e}")
+        import traceback; traceback.print_exc()
         return {
             "psi_global": 0.0, "total_exposed_value": 0, "el_sum": 0, "drift_alerts": 0,
             "avg_delay": 0, "avg_liquidity": 0,
             "scatter_points": [], "top_exposures": [],
             "cnae_labels": [], "cnae_data": [],
             "rejection_labels": [], "rejection_data": [],
-            "recommended_actions": ["Erro ao carregar dados"]
+            "recommended_actions": ["Erro ao carregar dados"],
+            "vme": 0, "ticket_medio": 0, "volume_baixa": 0,
+            "inadimplencia_pct": 0, "cnpjs_ativos": 0,
+            "status_labels": [], "status_data": [],
+            "monthly_chart": [],
+            "score_materialidade_media": 0.0,
         }
 
 @app.get("/v1/credit/pipeline", response_model=List[PipelineOperation], tags=["Dashboard"])
@@ -779,6 +973,285 @@ async def record_operation_action(action: OverrideAction, current_user: str = De
     """
     print(f"AUDIT LOG: {current_user} performed {action.action} on {action.id_boleto}. Reason: {action.reason}")
     return {"status": "success", "message": f"Ação {action.action} registrada com sucesso."}
+
+@app.get("/v1/pd/summary", response_model=PDSummaryResponse, tags=["Dashboard"])
+async def get_pd_summary(current_user: str = Depends(get_current_user)):
+    """
+    [PROTEGIDO] Calcula PD, LGD e EL por boleto via score_materialidade_v2.
+    Retorna KPIs, distribuição por faixa de score, scatter e EL por UF.
+    """
+    try:
+        df_bol = pd.read_csv(BOLETOS_CSV)
+        df_aux = pd.read_csv(BASE_AUX_CSV)
+
+        df = df_bol.merge(
+            df_aux[['id_cnpj', 'score_materialidade_v2', 'uf']],
+            left_on='id_pagador', right_on='id_cnpj', how='left'
+        )
+
+        # PD mapeado via score_materialidade_v2 (maior score = menor risco)
+        def score_to_pd(s):
+            if pd.isna(s): return 0.40
+            if s <= 200:   return 0.75
+            if s <= 400:   return 0.55
+            if s <= 600:   return 0.35
+            if s <= 800:   return 0.15
+            return 0.05
+
+        df['pd_score'] = df['score_materialidade_v2'].apply(score_to_pd)
+        # LGD = 1 - (vlr_baixa / vlr_nominal); default 0.45 quando não calculável
+        df['lgd'] = (
+            1 - df['vlr_baixa'].div(df['vlr_nominal'].replace(0, float('nan')))
+        ).clip(0, 1).fillna(0.45)
+        df['el'] = df['pd_score'] * df['lgd'] * df['vlr_nominal']
+
+        el_total   = float(df['el'].sum())
+        pd_media   = float(df['pd_score'].mean())
+        lgd_media  = float(df['lgd'].mean())
+        provisao   = round(el_total * 1.20, 2)  # buffer de segurança de 20%
+
+        # EL por faixa de score_materialidade_v2
+        bins   = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1001]
+        labels = ['0–100','101–200','201–300','301–400','401–500',
+                  '501–600','601–700','701–800','801–900','901–1000']
+        df['faixa'] = pd.cut(df['score_materialidade_v2'], bins=bins, labels=labels, include_lowest=True)
+        faixa_grp = (
+            df.groupby('faixa', observed=True)
+            .agg(el=('el', 'sum'), pd_media=('pd_score', 'mean'), count=('vlr_nominal', 'count'))
+            .reset_index()
+        )
+        el_por_faixa = [
+            {'faixa': str(r['faixa']), 'el': round(float(r['el']), 2),
+             'pd_media': round(float(r['pd_media']), 3), 'count': int(r['count'])}
+            for _, r in faixa_grp.iterrows()
+        ]
+
+        # EL por UF (top 10)
+        uf_grp = (
+            df.groupby('uf')
+            .agg(el=('el', 'sum'), pd_media=('pd_score', 'mean'), count=('vlr_nominal', 'count'))
+            .reset_index()
+            .sort_values('el', ascending=False)
+            .head(10)
+        )
+        el_por_uf = [
+            {'uf': str(r['uf']), 'el': round(float(r['el']), 2),
+             'pd_media': round(float(r['pd_media']), 3), 'count': int(r['count'])}
+            for _, r in uf_grp.iterrows()
+        ]
+
+        # Scatter: por empresa, exposição vs PD (prioriza alta PD ou alta exposição)
+        sc = (
+            df.groupby('id_pagador')
+            .agg(exposicao=('vlr_nominal', 'sum'), pd=('pd_score', 'mean'), el=('el', 'sum'))
+            .reset_index()
+        )
+        sc_filtered = sc[(sc['pd'] > 0.05) | (sc['exposicao'] > 50000)]
+        if len(sc_filtered) > 250:
+            sc_filtered = sc_filtered.sample(250, random_state=42)
+        scatter_data = [
+            {'id': f"PAG_{r['id_pagador'][:6].upper()}",
+             'exposicao': round(float(r['exposicao']), 2),
+             'pd': round(float(r['pd']), 3),
+             'el': round(float(r['el']), 2)}
+            for _, r in sc_filtered.iterrows()
+        ]
+
+        return {
+            'el_total': round(el_total, 2),
+            'pd_media': round(pd_media, 4),
+            'lgd_media': round(lgd_media, 4),
+            'provisao_sugerida': provisao,
+            'el_por_faixa': el_por_faixa,
+            'scatter_data': scatter_data,
+            'el_por_uf': el_por_uf,
+        }
+    except Exception as e:
+        print(f"ERROR pd/summary: {e}")
+        import traceback; traceback.print_exc()
+        return {'el_total': 0, 'pd_media': 0, 'lgd_media': 0, 'provisao_sugerida': 0,
+                'el_por_faixa': [], 'scatter_data': [], 'el_por_uf': []}
+
+@app.get("/v1/politica/summary", response_model=PoliticaSummaryResponse, tags=["Dashboard"])
+async def get_politica_summary(current_user: str = Depends(get_current_user)):
+    """
+    [PROTEGIDO] Métricas de simulação da Política de Rejeição (Underwriting).
+    Retorna KPIs, curva de impacto e matriz de decisão (heatmap).
+    """
+    try:
+        df_bol = pd.read_csv(BOLETOS_CSV)
+        df_aux = pd.read_csv(BASE_AUX_CSV)
+
+        df = df_bol.merge(
+            df_aux[['id_cnpj', 'score_materialidade_v2',
+                    'sacado_indice_liquidez_1m', 'share_vl_inad_pag_bol_6_a_15d']],
+            left_on='id_pagador', right_on='id_cnpj', how='left'
+        )
+        df['score_materialidade_v2'] = pd.to_numeric(df['score_materialidade_v2'], errors='coerce')
+        df['sacado_indice_liquidez_1m'] = pd.to_numeric(df['sacado_indice_liquidez_1m'], errors='coerce')
+        df['share_vl_inad_pag_bol_6_a_15d'] = pd.to_numeric(df['share_vl_inad_pag_bol_6_a_15d'], errors='coerce').fillna(0)
+
+        THRESHOLD = 400
+        df['aprovado'] = df['score_materialidade_v2'].fillna(0) > THRESHOLD
+
+        # ── KPIs ────────────────────────────────────────────────────────
+        taxa_aprovacao   = float(df['aprovado'].mean() * 100)
+        taxa_rejeicao    = float((~df['aprovado']).mean() * 100)
+
+        df_rej = df[~df['aprovado']]
+        capital_preservado = float(
+            df_rej[df_rej['share_vl_inad_pag_bol_6_a_15d'] > 0.5]['vlr_nominal'].sum()
+        )
+        falso_positivo_pct = float(
+            len(df_rej[df_rej['default'] == 0]) / max(len(df_rej), 1) * 100
+        )
+
+        # EL economizado (boletos rejeitados com alta share_inad)
+        def score_to_pd(s):
+            if pd.isna(s): return 0.40
+            if s <= 200: return 0.75
+            if s <= 400: return 0.55
+            if s <= 600: return 0.35
+            if s <= 800: return 0.15
+            return 0.05
+
+        df_rej2 = df_rej.copy()
+        df_rej2['pd_score'] = df_rej2['score_materialidade_v2'].apply(score_to_pd)
+        df_rej2['lgd'] = (1 - df_rej2['vlr_baixa'].div(
+            df_rej2['vlr_nominal'].replace(0, float('nan')))).clip(0, 1).fillna(0.45)
+        el_economizado = float((df_rej2['pd_score'] * df_rej2['lgd'] * df_rej2['vlr_nominal']).sum())
+
+        # ── Curva de Impacto ─────────────────────────────────────────────
+        total_vlr = df['vlr_nominal'].sum() or 1
+        impact_curve = []
+        for t in range(0, 1001, 50):
+            mask = df['score_materialidade_v2'].fillna(0) > t
+            aprov = df[mask]
+            n = len(aprov)
+            impact_curve.append({
+                'threshold': t,
+                'receita_pct':      round(float(aprov['vlr_nominal'].sum() / total_vlr * 100), 2),
+                'inadimplencia_pct': round(float(aprov['default'].mean() * 100) if n > 0 else 0, 2),
+                'n_aprovado':       int(n),
+            })
+
+        # ── Heatmap — Score × Liquidez ────────────────────────────────────
+        score_bins  = [0, 200, 400, 600, 800, 1001]
+        score_labels = ['0–200', '200–400', '400–600', '600–800', '800–1000']
+        liq_bins    = [0, 0.2, 0.4, 0.6, 0.8, 1.01]
+        liq_labels  = ['0–0.2', '0.2–0.4', '0.4–0.6', '0.6–0.8', '0.8–1.0']
+
+        df['score_bin'] = pd.cut(df['score_materialidade_v2'],
+                                  bins=score_bins, labels=score_labels, include_lowest=True)
+        df['liq_bin']   = pd.cut(df['sacado_indice_liquidez_1m'],
+                                  bins=liq_bins, labels=liq_labels, include_lowest=True)
+
+        hm = (df.groupby(['score_bin', 'liq_bin'], observed=True)
+                .agg(default_rate=('default', 'mean'),
+                     count=('vlr_nominal', 'count'),
+                     atraso_medio=('dias_atraso', 'mean'))
+                .reset_index())
+
+        heatmap_data = [
+            {
+                'score_bin':    str(r['score_bin']),
+                'liq_bin':      str(r['liq_bin']),
+                'default_rate': round(float(r['default_rate']), 3),
+                'count':        int(r['count']),
+                'atraso_medio': round(float(r['atraso_medio']), 1),
+            }
+            for _, r in hm.iterrows()
+        ]
+
+        # ── Curva de Contágio por PageRank ───────────────────────────────────
+        # tol=0% (zero tolerância) → bloqueia pagerank > p85 (hubs de maior risco)
+        # tol=30% (permissivo)     → bloqueia apenas pagerank > p97 (hubs extremos)
+        # Mapeamento: percentile = 85 + (tol/30) * 12
+        df_pipe_full = pd.read_csv(PIPELINE_CSV)
+        df_grafo_cg  = pd.read_csv(GRAFO_CSV)
+        df_cg = df_pipe_full.merge(
+            df_grafo_cg[['id_boleto', 'pagador_pagerank']],
+            on='id_boleto', how='left'
+        )
+        df_cg['pagador_pagerank'] = pd.to_numeric(df_cg['pagador_pagerank'], errors='coerce').fillna(0)
+        df_cg['perda_esperada_el'] = pd.to_numeric(df_cg['perda_esperada_el'], errors='coerce').fillna(0)
+        df_cg['vlr_nominal'] = pd.to_numeric(df_cg['vlr_nominal'], errors='coerce').fillna(0)
+
+        contagio_curve = []
+        for tol in range(0, 31, 5):
+            pct   = 85.0 + (tol / 30.0) * 12.0   # tol=0 → p85, tol=30 → p97
+            thresh = float(np.percentile(df_cg['pagador_pagerank'], pct))
+            blocked = df_cg[df_cg['pagador_pagerank'] > thresh]
+            contagio_curve.append({
+                'tol':               tol,
+                'pagerank_threshold': round(thresh, 6),
+                'n_blocked':         int(len(blocked)),
+                'valor_blocked':     round(float(blocked['vlr_nominal'].sum()), 2),
+                'el_blocked':        round(float(blocked['perda_esperada_el'].sum()), 2),
+            })
+
+        return {
+            'taxa_aprovacao':    round(taxa_aprovacao, 2),
+            'taxa_rejeicao':     round(taxa_rejeicao, 2),
+            'capital_preservado': round(capital_preservado, 2),
+            'falso_positivo_pct': round(falso_positivo_pct, 2),
+            'el_economizado':    round(el_economizado, 2),
+            'impact_curve':      impact_curve,
+            'heatmap_data':      heatmap_data,
+            'heatmap_score_bins': score_labels,
+            'heatmap_liq_bins':  liq_labels,
+            'contagio_curve':    contagio_curve,
+        }
+    except Exception as e:
+        print(f"ERROR politica/summary: {e}")
+        import traceback; traceback.print_exc()
+        return {
+            'taxa_aprovacao': 0, 'taxa_rejeicao': 0, 'capital_preservado': 0,
+            'falso_positivo_pct': 0, 'el_economizado': 0,
+            'impact_curve': [], 'heatmap_data': [],
+            'heatmap_score_bins': [], 'heatmap_liq_bins': [],
+            'contagio_curve': [],
+        }
+
+@app.get("/v1/pipeline/report", tags=["Dashboard"])
+async def get_pipeline_report(
+    limit: int = 300,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    [PROTEGIDO] Amostra balanceada do pipeline completo (aprovados + reprovados + análise).
+    Usado pela tabela de decisão na tela de Política de Rejeição.
+    """
+    try:
+        df = pd.read_csv(PIPELINE_CSV)
+        for col in ['score_pd_bruto', 'perda_esperada_el', 'vlr_nominal']:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
+        # Amostragem proporcional por decisao para garantir todos os tipos
+        parts = []
+        for decisao, group in df.groupby('decisao_politica'):
+            n = min(len(group), max(20, int(limit * len(group) / len(df))))
+            parts.append(group.sample(n=n, random_state=42))
+        sample = (pd.concat(parts)
+                    .drop_duplicates(subset=['id_boleto'])
+                    .sort_values('score_pd_bruto', ascending=False)
+                    .head(limit))
+
+        return [
+            {
+                "id_boleto": str(r['id_boleto']),
+                "id_pagador": str(r['id_pagador']),
+                "vlr_nominal": round(float(r['vlr_nominal']), 2),
+                "score_pd":    round(float(r['score_pd_bruto']), 4),
+                "perda_el":    round(float(r['perda_esperada_el']), 2),
+                "decisao":     str(r['decisao_politica']),
+            }
+            for _, r in sample.iterrows()
+        ]
+    except Exception as e:
+        print(f"ERROR pipeline/report: {e}")
+        return []
+
 
 if __name__ == "__main__":
     import uvicorn
