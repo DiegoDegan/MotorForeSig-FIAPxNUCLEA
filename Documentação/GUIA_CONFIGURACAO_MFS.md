@@ -1,86 +1,68 @@
-# 🚀 Guia de Configuração: Motor ForeSig (MFS)
+# Guia de Configuração: Motor ForeSig (MFS) - v2.0
 
-Este guia foi criado para ajudar você a configurar e rodar o projeto **Motor ForeSig** na sua máquina pela primeira vez, usando o VS Code.
-
----
-
-## 1. Pré-requisitos (Instale se ainda não tiver)
-
-Antes de começar, você precisará de três coisas instaladas no seu computador:
-
-1.  **Python**: [Baixe aqui](https://www.python.org/downloads/) (Marque a opção **"Add Python to PATH"** durante a instalação).
-2.  **Git**: [Baixe aqui](https://git-scm.com/downloads) (Apenas clique em "Next" em todas as opções).
-3.  **VS Code**: [Baixe aqui](https://code.visualstudio.com/).
+Este guia foi criado para ajudar você a configurar e rodar o projeto **Motor ForeSig** na sua máquina pela primeira vez.
 
 ---
 
-## 2. Baixando o Projeto do GitHub
+## 1. Pré-requisitos (Instalação Inicial)
 
-1.  Abra o **VS Code**.
-2.  Pressione as teclas `Ctrl + Shift + P` ao mesmo tempo.
-3.  Digite `Git: Clone` e aperte **Enter**.
-4.  Cole o link do repositório: `https://github.com/DiegoDegan/MotorForeSig-FIAPxNUCLEA.git`
-5.  Escolha uma pasta no seu computador onde o projeto será salvo.
-6.  Quando terminar, aparecerá uma mensagem no canto inferior direito. Clique em **Abrir (Open)**.
+Antes de começar, certifique-se de ter instalado:
 
----
-
-## 3. Configurando o Ambiente (O "Coração" do Projeto)
-
-Agora vamos preparar o computador para entender o código.
-
-1.  No VS Code, abra o terminal pressionando `Ctrl + '` (ou vá em **Terminal > New Terminal** no menu superior).
-2.  Copie e cole o comando abaixo no terminal e aperte **Enter**:
-    ```powershell
-    python -m venv .venv
-    ```
-    *(Isso cria uma "caixa isolada" para o projeto não interferir no seu PC).*
-
-3.  **Ativando a caixa**:
-    ```powershell
-    .\.venv\Scripts\Activate.ps1
-    ```
-    *(Se aparecer um erro de "Script de execução", não se preocupe, avise o Diego).*
+1.  **Python 3.13+**: [Baixe aqui](https://www.python.org/downloads/). **Importante:** Marque a opção **"Add Python to PATH"** na instalação.
+2.  **Git**: [Baixe aqui](https://git-scm.com/downloads).
+3.  **Cursor ou VS Code**: [Baixe aqui](https://cursor.com/).
 
 ---
 
-## 4. Instalando os Pacotes Necessários
+## 2. Configurando o Ambiente (Passo a Passo)
 
-Com o terminal ainda aberto, cole este comando:
+Abra a pasta do projeto no seu editor e abra o terminal (`Ctrl + '`).
+
+### Passo 1: Criar e Ativar o Ambiente Virtual (.venv)
+O ambiente virtual evita conflitos entre as bibliotecas do seu PC e as do projeto.
+```powershell
+# Cria a pasta .venv
+python -m venv .venv
+
+# Ativa o ambiente (Se der erro de permissão, veja as dicas abaixo)
+.\.venv\Scripts\Activate.ps1
+```
+
+### Passo 2: Instalar Dependências
+Com o ambiente ativado (deve aparecer um `(.venv)` no terminal), instale as bibliotecas:
 ```powershell
 pip install -r requirements.txt
 ```
-*(Aguarde alguns minutos. O computador está baixando as ferramentas de IA e análise de dados).*
+
+### Passo 3: Configurar Credenciais (.env)
+1.  Renomeie o arquivo `.env.example` para apenas `.env`.
+2.  Preencha as variáveis de ambiente (as chaves do Neo4j AuraDB e Google Cloud que o Diego te passar).
 
 ---
 
-## 5. Configurando as Chaves (Arquivo .env)
+## 3. Como Rodar o Motor
 
-O projeto precisa de "senhas" para funcionar (como acesso ao banco de dados).
+O projeto agora possui uma esteira automatizada que faz todo o trabalho pesado.
 
-1.  Na lista de arquivos à esquerda, procure pelo arquivo `.env.example`.
-2.  Clique com o botão direito nele e escolha **Renomear (Rename)**.
-3.  Mude o nome para apenas `.env` (apague o `.example`).
-4.  Abra esse arquivo e preencha as informações que o Diego te passar (como `NEO4J_PASSWORD`).
+### ⚙️ Rodar o Pipeline de IA (Limpeza + Treino)
+Sempre que quiser atualizar o cérebro da IA ou processar novos dados em `data/raw/`:
+```powershell
+python backend/run_pipeline.py
+```
 
----
-
-## 6. Como Rodar o Projeto?
-
-Tudo pronto! Para testar se o motor de IA está funcionando:
-
-1.  No terminal, digite:
-    ```powershell
-    python run_all.py
-    ```
-2.  Isso executará toda a esteira: desde a limpeza dos dados até o treinamento da IA.
+### 🌐 Ligar a API (Para o Dashboard)
+Para que o Dashboard consiga ler os dados, você precisa ligar o servidor do backend:
+```powershell
+python backend/main_rest_api.py
+```
+*(O servidor rodará em http://127.0.0.1:8000)*
 
 ---
 
-## 🛠️ Dicas de Ouro (VS Code)
+## 🛠️ Resolução de Problemas Comuns
 
--   **Extensão de Python**: O VS Code vai sugerir instalar a extensão "Python" da Microsoft. Clique em **Instalar**.
--   **Arquivos CSV**: Se quiser ver as planilhas, procure na pasta `data/raw/` ou `data/processed/`.
+-   **Erro ao Ativar .venv (UnauthorizedAccess):** Se o Windows bloquear o comando de ativação, rode este comando no terminal uma vez:
+    `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+-   **Módulo Não Encontrado no Editor:** Se o seu editor (Cursor/VS Code) mostrar linhas vermelhas, use o `Ctrl + Shift + P` -> **Python: Select Interpreter** e escolha o que aponta para a pasta `.venv`.
 
-**Dúvidas?** Chame o Diego no Slack/WhatsApp!  
-*Atualizado em: 09/05/2026*
+**Última Atualização:** 13/05/2026

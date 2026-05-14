@@ -4,14 +4,25 @@ venv/
 env/
 .env
 
-
 # Arquivos pré-compilados do Python
 __pycache__/
 *.pyc
 
-# Configurações de IDEs
+# Configurações de IDEs e Ferramentas
 .vscode/
 .idea/
+.claude/
+.DS_Store
+
+# Logs e Ferramentas de ML
+wandb/
+*.log
+
+# Frontend e Build
+node_modules/
+frontend_mvp/node_modules/
+dist/
+build/
 
 # Dados, Caches e Modelos ML
 data/processed/

@@ -5,7 +5,6 @@ import sys
 
 # Ajustar path para importar módulos paralelos
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from backend.scripts.get_bacen_data import process_bacen_data
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -17,15 +16,18 @@ def montar_base_modelagem():
         # 1. Carregar Base Boletos
         logger.info("Carregando base_boletos_tratados.csv...")
         path_boletos = os.path.join(processed_dir, "base_boletos_tratados.csv")
+        if not os.path.exists(path_boletos):
+            raise FileNotFoundError(f"Arquivo não encontrado: {path_boletos}. Rode o script de limpeza primeiro.")
+            
         df_boletos = pd.read_csv(path_boletos)
         df_boletos['dt_emissao'] = pd.to_datetime(df_boletos['dt_emissao'])
         
-        # 2. Carregar Base Auxiliar
+        # 2. Carregar Base Auxiliar (CNPJ info)
         logger.info("Carregando base_auxiliar_tratada.csv...")
         path_auxiliar = os.path.join(processed_dir, "base_auxiliar_tratada.csv")
         df_aux = pd.read_csv(path_auxiliar)
         
-        # 3. Carregar Grafo Features (Cuidado para caso não existir se ocorreu erro no Neo4j)
+        # 3. Carregar Grafo Features (Métricas do Neo4j)
         logger.info("Carregando grafo_features_mfs.csv...")
         path_grafo = os.path.join(processed_dir, "grafo_features_mfs.csv")
         if os.path.exists(path_grafo):
@@ -34,14 +36,10 @@ def montar_base_modelagem():
             logger.warning("grafo_features_mfs.csv não encontrado. Merge será feito sem features de rede.")
             df_grafo = pd.DataFrame()
             
-        # 4. (REMOVIDO) Obter Dados Macro BACEN
-        #logger.info("Obtendo dados atualizados do BACEN...")
-        #df_selic, df_ipca = process_bacen_data()
-        
         # --- MERGES ---
         logger.info("Iniciando merges...")
         
-        # Merge 1: Boletos + Auxiliar (Focado no Pagador)
+        # Merge 1: Boletos + Dados do Pagador (CNPJ)
         df_modelo = pd.merge(
             df_boletos, 
             df_aux, 
@@ -51,27 +49,31 @@ def montar_base_modelagem():
         )
         df_modelo.drop(columns=["id_cnpj"], inplace=True, errors="ignore")
         
-        # Merge 2: (REMOVIDO) Boletos + Features de Grafo
-        # if not df_grafo.empty:
-        #     ...
+        # Merge 2: Mesclagem de Features de Grafo (Centralidade/PageRank)
+        if not df_grafo.empty:
+            logger.info("Adicionando inteligência de rede (Grafos)...")
+            # Assumindo que o grafo_features_mfs tem a coluna 'id_pagador' ou 'id_cnpj'
+            # Vamos unificar por 'id_pagador'
+            df_modelo = pd.merge(
+                df_modelo,
+                df_grafo,
+                on="id_pagador",
+                how="left"
+            )
         
-        # Merge 3: (REMOVIDO) Macro BACEN
-        # df_modelo = pd.merge_asof(...)
-        
-        # Limpezas Finais antes do ML (substituir tipos textuais e converter IDs)
-        # Guardaremos os identificadores para poder saber de que boleto estamos falando na esteira operacional.
-        # Eles simplesmente não entrarão como array X na hora do fit (já isolamos isso no treinador.py)
+        # Limpezas Finais para o ML
+        # Removemos colunas temporais ou categóricas pesadas que não entram no treinamento
         cols_to_drop = ['tipo_baixa', 'tipo_especie', 'uf', 'dt_vencimento', 'dt_pagamento']
         df_modelo.drop(columns=[c for c in cols_to_drop if c in df_modelo.columns], inplace=True, errors="ignore")
         
-        # Dropa possíveis NaNs que sobraram
+        # Tratamento de valores nulos pós-merge
         df_modelo.fillna(0, inplace=True)
         
         output_path = os.path.join(processed_dir, "base_modelagem.csv")
         df_modelo.to_csv(output_path, index=False)
         
         logger.info(f"Sucesso! Base de modelagem exportada em: {output_path}")
-        logger.info(f"Amostra de shape: {df_modelo.shape}")
+        logger.info(f"Shape final da base: {df_modelo.shape}")
         
     except Exception as e:
         logger.error(f"Falha ao montar base de modelagem: {e}")

@@ -192,12 +192,45 @@ export const getGovernanceMetrics = async () => {
 };
 
 export interface PipelineReportItem {
+  // identifiers & dates
   id_boleto: string;
   id_pagador: string;
+  id_beneficiario?: string | null;
+  dt_emissao?: string | null;
+  dt_vencimento?: string | null;
+  dt_pagamento?: string | null;
+  // financial
   vlr_nominal: number;
+  vlr_baixa?: number | null;
+  tipo_baixa?: string | null;
+  tipo_especie?: string | null;
+  // cadastral
+  id_cnpj?: string | null;
+  cd_cnae_prin?: string | null;
+  uf?: string | null;
+  // features de risco
+  sacado_indice_liquidez_1m?: number | null;
+  cedente_indice_liquidez_1m?: number | null;
+  score_materialidade_evolucao?: number | null;
+  media_atraso_dias?: number | null;
+  indicador_liquidez_quantitativo_3m?: number | null;
+  share_vl_inad_pag_bol_6_a_15d?: number | null;
+  score_quantidade_v2?: number | null;
+  score_materialidade_v2?: number | null;
+  score_contagio?: number | null;
+  prob_sobrevivencia?: number | null;
+  atraso_previsto_dias?: number | null;
+  // métricas de crédito
+  PD: number;
+  LGD?: number | null;
+  EL: number;
+  // decisão
+  STATUS_FINAL: string;
+  MOTIVO_DECISAO?: string | null;
+  // aliases legados para compatibilidade com a tabela do dashboard
   score_pd: number;
   perda_el: number;
-  decisao: string; // APROVADO_AUTO | ANALISE_MESA | REPROVADO_*
+  decisao: string;
 }
 
 export const getPipelineReport = async (): Promise<PipelineReportItem[]> => {

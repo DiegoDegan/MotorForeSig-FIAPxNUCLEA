@@ -10,68 +10,71 @@ flowchart TD
     subgraph MFS_SYSTEM [MOTOR MFS: ECOSSISTEMA DE INTELIGÊNCIA DE CRÉDITO]
         direction TB
 
-        subgraph Ingestion [1. Ingestão & Macroeconomia]
+        subgraph Ingestion [1. Ingestão de Dados Transacionais]
             direction LR
             B[Transações de Boletos]:::businessData
             A[Dados Cadastrais FIDC]:::businessData
-            BACEN((Indicadores BACEN\nSelic & IPCA)):::engine
+            Raw[(Repositório /data/raw)]:::businessData
+            
+            B --> Raw
+            A --> Raw
         end
 
-        subgraph GraphEngine [2. Engenharia de Redes & Contágio]
+        subgraph PipelineOrchestra [2. Orquestração & Redes de Risco]
             direction TB
-            ETL[Higienização de Dados]:::engine
-            Neo[(Grafo Financeiro\nNeo4j AuraDB)]:::engine
-            RiskNet[Análise de Contágio Sistêmico]:::engine
+            RunAll[["run_pipeline.py (Orquestrador)"]]:::engine
+            ETL[limpeza.py (Saneamento)]:::engine
+            Neo[(Neo4j AuraDB Cloud)]:::engine
+            RiskNet[Métricas de Contágio Sistêmico]:::engine
             
-            B --> ETL
-            A --> ETL
+            Raw --> RunAll
+            RunAll --> ETL
             ETL --> Neo
-            Neo -.->|Mapeamento de Redes| RiskNet
+            Neo -.->|PageRank & Centralidade| RiskNet
         end
 
         subgraph AICore [3. Inteligência Preditiva & Políticas]
             direction TB
-            Merge[Consolidação de Variáveis]:::engine
-            ML[Cérebro IA: PD & Atraso]:::aiCore
-            SHAP[Explicabilidade de Decisões]:::aiCore
-            YAML[Políticas de Risco Dinâmicas]:::businessData
+            Merge[montar_base_modelagem.py]:::engine
+            ML[Cérebro IA: PD & Probabilidade]:::aiCore
+            SHAP[explicabilidade.py (XAI)]:::aiCore
+            YAML[politica_risco.yaml (Regras de Negócio)]:::businessData
             
             ETL --> Merge
-            BACEN --> Merge
             RiskNet --> Merge
             Merge --> ML
             ML --> SHAP
             Merge --> YAML
         end
 
-        subgraph CloudInfra [4. Cloud Gateway & Segurança]
+        subgraph CloudInfra [4. Cloud Runtime & Storage]
             direction LR
-            API{API de Serviços de Risco\nFastAPI & Segurança JWT}:::engine
-            GCS[(Armazenamento Seguro\nGoogle Cloud Storage)]:::cloud
+            API{FastAPI Gateway\nCloud Run}:::engine
+            GCS[(Google Cloud Storage\nModel persistence)]:::cloud
             
-            ML -.->|Sincronização| GCS
-            GCS -.->|Entrega| API
+            ML -.->|Sincronização .joblib| GCS
+            GCS -.->|Hot-Reload Assets| API
             SHAP --> API
             YAML --> API
         end
 
-        subgraph Delivery [5. Visão de Negócio & Mesa de Crédito]
+        subgraph Delivery [5. Entrega & Mesa de Crédito]
             direction TB
-            Cockpit[Cockpit Estratégico\nPerformance da Carteira]:::interface
-            NetViz[Mapa de Risco Sistêmico]:::interface
-            Ops[Mesa de Operações\nDecisões Assistidas]:::interface
-            Gov[Monitor de Governança\nAuditoria & Drift]:::interface
+            Cockpit[Cockpit Estratégico React]:::interface
+            NetViz[Visualização de Grafo D3]:::interface
+            Ops[Mesa de Operações\nJustificativa SHAP]:::interface
+            Report[Relatórios de Pipeline]:::interface
             
-            API <-->|Insights em Tempo Real| Cockpit
-            API <-->|Teia de Conectividade| NetViz
-            API <-->|Ação & Feedback Loop| Ops
-            API -->|Métricas de Confiança| Gov
+            API <-->|JSON Stream| Cockpit
+            API <-->|Relational Data| NetViz
+            API <-->|Ação & Feedback| Ops
+            API -->|Pipeline Report| Report
         end
 
     end
 
     %% Conexões entre camadas principais
-    Ingestion --> GraphEngine
-    GraphEngine --> AICore
+    Ingestion --> PipelineOrchestra
+    PipelineOrchestra --> AICore
     AICore --> CloudInfra
     CloudInfra --> Delivery

@@ -95,9 +95,15 @@ def rodar_pipeline():
         # Operação em Toda a Base Ativa
         logger.info("2. Ingestão da Remessa Comercial...")
         df_real = pd.read_csv(os.path.join(processed_dir, 'base_modelagem.csv'))
-        
+
         # Pega toda a base sem limitação
         df_lote = df_real.copy()
+
+        # Re-attach colunas descartadas no build da base de modelagem para compor o relatório final
+        _bol_raw = pd.read_csv(os.path.join(processed_dir, 'base_boletos_tratados.csv'))
+        _extra = [c for c in ['id_boleto', 'dt_vencimento', 'dt_pagamento', 'tipo_baixa', 'tipo_especie', 'uf'] if c in _bol_raw.columns]
+        df_lote = df_lote.merge(_bol_raw[_extra], on='id_boleto', how='left')
+        del _bol_raw
         
         logger.info("3. Formatando Vetores para IA...")
         X = df_lote.copy()
@@ -135,11 +141,31 @@ def rodar_pipeline():
             pareceres.append(texto_final)
             
         df_lote['parecer_ia_shap'] = pareceres
-        
+
+        # Colunas finais do relatório com nomes padronizados para o dashboard
+        df_lote['PD']  = df_lote['score_pd_bruto']
+        df_lote['LGD'] = (
+            1 - df_lote['vlr_baixa'].div(df_lote['vlr_nominal'].replace(0, float('nan')))
+        ).clip(0, 1).fillna(0.45)
+        df_lote['EL']                 = df_lote['PD'] * df_lote['LGD'] * df_lote['vlr_nominal']
+        df_lote['atraso_previsto_dias'] = df_lote['atraso_previsto']
+        df_lote['STATUS_FINAL']       = df_lote['decisao_politica']
+        df_lote['MOTIVO_DECISAO']     = df_lote['parecer_ia_shap']
+        df_lote['id_cnpj']            = df_lote['id_pagador']
+
         logger.info("7. Exportando Pipeline Operacional (Dashboard/Mesa)...")
         relatorio_colunas = [
-            'id_boleto', 'id_pagador', 'id_beneficiario', 'vlr_nominal',
-            'score_pd_bruto', 'perda_esperada_el', 'atraso_previsto', 'decisao_politica', 'parecer_ia_shap'
+            'id_boleto', 'id_pagador', 'id_beneficiario', 'dt_emissao',
+            'dt_vencimento', 'dt_pagamento', 'vlr_nominal', 'vlr_baixa',
+            'tipo_baixa', 'tipo_especie', 'id_cnpj', 'cd_cnae_prin', 'uf',
+            'sacado_indice_liquidez_1m', 'cedente_indice_liquidez_1m',
+            'score_materialidade_evolucao', 'media_atraso_dias',
+            'indicador_liquidez_quantitativo_3m', 'share_vl_inad_pag_bol_6_a_15d',
+            'score_quantidade_v2', 'score_materialidade_v2', 'score_contagio',
+            'prob_sobrevivencia', 'atraso_previsto_dias',
+            'PD', 'LGD', 'EL', 'STATUS_FINAL', 'MOTIVO_DECISAO',
+            # colunas originais mantidas para compatibilidade com o dashboard
+            'score_pd_bruto', 'perda_esperada_el', 'decisao_politica',
         ]
         
         # Garante que identificadores não travem caso não estejam na lista amostrada

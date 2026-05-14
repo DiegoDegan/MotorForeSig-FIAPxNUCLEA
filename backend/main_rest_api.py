@@ -1222,29 +1222,85 @@ async def get_pipeline_report(
     [PROTEGIDO] Amostra balanceada do pipeline completo (aprovados + reprovados + análise).
     Usado pela tabela de decisão na tela de Política de Rejeição.
     """
+    def _sf(r, col, decimals=4):
+        v = r.get(col)
+        if v is None:
+            return None
+        try:
+            if pd.isna(v):
+                return None
+        except (TypeError, ValueError):
+            pass
+        try:
+            return round(float(v), decimals)
+        except (TypeError, ValueError):
+            return None
+
+    def _ss(r, col):
+        v = r.get(col)
+        if v is None:
+            return None
+        try:
+            if pd.isna(v):
+                return None
+        except (TypeError, ValueError):
+            pass
+        s = str(v).strip()
+        return s if s and s.lower() != 'nan' else None
+
     try:
         df = pd.read_csv(PIPELINE_CSV)
         for col in ['score_pd_bruto', 'perda_esperada_el', 'vlr_nominal']:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
         # Amostragem proporcional por decisao para garantir todos os tipos
+        decisao_col = 'STATUS_FINAL' if 'STATUS_FINAL' in df.columns else 'decisao_politica'
+        score_col   = 'score_pd_bruto'
         parts = []
-        for decisao, group in df.groupby('decisao_politica'):
+        for decisao, group in df.groupby(decisao_col):
             n = min(len(group), max(20, int(limit * len(group) / len(df))))
             parts.append(group.sample(n=n, random_state=42))
         sample = (pd.concat(parts)
                     .drop_duplicates(subset=['id_boleto'])
-                    .sort_values('score_pd_bruto', ascending=False)
+                    .sort_values(score_col, ascending=False)
                     .head(limit))
 
         return [
             {
-                "id_boleto": str(r['id_boleto']),
-                "id_pagador": str(r['id_pagador']),
-                "vlr_nominal": round(float(r['vlr_nominal']), 2),
-                "score_pd":    round(float(r['score_pd_bruto']), 4),
-                "perda_el":    round(float(r['perda_esperada_el']), 2),
-                "decisao":     str(r['decisao_politica']),
+                "id_boleto":    str(r.get('id_boleto', '')),
+                "id_pagador":   str(r.get('id_pagador', '')),
+                "id_beneficiario": _ss(r, 'id_beneficiario'),
+                "dt_emissao":   _ss(r, 'dt_emissao'),
+                "dt_vencimento": _ss(r, 'dt_vencimento'),
+                "dt_pagamento": _ss(r, 'dt_pagamento'),
+                "vlr_nominal":  round(float(r.get('vlr_nominal', 0)), 2),
+                "vlr_baixa":    _sf(r, 'vlr_baixa', 2),
+                "tipo_baixa":   _ss(r, 'tipo_baixa'),
+                "tipo_especie": _ss(r, 'tipo_especie'),
+                "id_cnpj":      _ss(r, 'id_cnpj'),
+                "cd_cnae_prin": _ss(r, 'cd_cnae_prin'),
+                "uf":           _ss(r, 'uf'),
+                "sacado_indice_liquidez_1m":          _sf(r, 'sacado_indice_liquidez_1m'),
+                "cedente_indice_liquidez_1m":         _sf(r, 'cedente_indice_liquidez_1m'),
+                "score_materialidade_evolucao":       _sf(r, 'score_materialidade_evolucao'),
+                "media_atraso_dias":                  _sf(r, 'media_atraso_dias', 2),
+                "indicador_liquidez_quantitativo_3m": _sf(r, 'indicador_liquidez_quantitativo_3m'),
+                "share_vl_inad_pag_bol_6_a_15d":     _sf(r, 'share_vl_inad_pag_bol_6_a_15d'),
+                "score_quantidade_v2":   _sf(r, 'score_quantidade_v2', 2),
+                "score_materialidade_v2": _sf(r, 'score_materialidade_v2', 2),
+                "score_contagio":        _sf(r, 'score_contagio'),
+                "prob_sobrevivencia":    _sf(r, 'prob_sobrevivencia'),
+                "atraso_previsto_dias":  _sf(r, 'atraso_previsto_dias', 2),
+                "PD":  _sf(r, 'PD') if _sf(r, 'PD') is not None else round(float(r.get('score_pd_bruto', 0)), 4),
+                "LGD": _sf(r, 'LGD'),
+                "EL":  _sf(r, 'EL', 2) if _sf(r, 'EL', 2) is not None else round(float(r.get('perda_esperada_el', 0)), 2),
+                "STATUS_FINAL": str(r.get('STATUS_FINAL') or r.get('decisao_politica', '')),
+                "MOTIVO_DECISAO": _ss(r, 'MOTIVO_DECISAO') or _ss(r, 'parecer_ia_shap'),
+                # Legacy aliases mantidos para compatibilidade com a tabela do dashboard
+                "score_pd": round(float(r.get('score_pd_bruto', 0)), 4),
+                "perda_el": round(float(r.get('perda_esperada_el', 0)), 2),
+                "decisao":  str(r.get('decisao_politica', '')),
             }
             for _, r in sample.iterrows()
         ]

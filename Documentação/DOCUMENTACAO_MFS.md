@@ -1,82 +1,71 @@
-# 🖥️ Documentação Oficial: Motor MFS (MVP - Núclea)
+# Documentação Oficial: Motor MFS (v2.0 - Núclea)
 > **Motor de Risco ForeSig - *Data-Driven & Graph-Based Credit Risk***
 
 ## 1. O que Construímos?
-Substituímos uma esteira de análise de crédito puramente relacional (planilhas) por um **Motor Preditivo Híbrido** que opera em Múltiplas Dimensões. Ele não avalia apenas a "saúde" do credor, mas lê a **temperatura macroeconômica** do país, o **contágio financeiro** da rede de fornecedores e traduz matemáticas complexas em textos inteligíveis para a Mesa Operacional de forma autônoma.
-
-O FIDC da Núclea não entra mais cego numa operação; ele intercepta dinheiros "sujos de calote" muito antes da cessão ocorrer.
+Substituímos uma esteira de análise de crédito puramente relacional por um **Motor Preditivo Híbrido** de última geração. O sistema opera em múltiplas dimensões: analisa a saúde financeira individual, o **contágio sistêmico** via grafos de rede e aplica políticas macroprudenciais dinâmicas, traduzindo decisões complexas em justificativas de negócio via IA Explicável (XAI).
 
 ---
 
-## 2. A Arquitetura do Sistema (O Funil)
+## 2. A Arquitetura do Sistema (O Fluxo de Dados)
 
-O "Coração" do sistema corre através de um Orquestrador Geral (`run_all.py`), responsável por fazer toda a máquina girar em esteira na nuvem ou localmente. O funil funciona da seguinte forma:
+O "Coração" do sistema é o Orquestrador Central (`backend/run_pipeline.py`), responsável por garantir que todas as etapas de inteligência ocorram na ordem correta, seja em ambiente de desenvolvimento ou produção.
 
-### Fase 1: Ingestão e Imunidade Econômica
-O script de limpeza consome a base de transações puras. Imediatamente após isso, a aplicação realiza chamadas remotas na **API Pública do BACEN** (`get_bacen_data.py`), sugando a Taxa Selic e o IPCA em tempo real para o exato dia do vencimento do boleto, contextualizando a IA se aquele dinheiro "estava mais caro" de se pagar naquele momento de Brasil.
+### Fase 1: Higienização e Saneamento (`limpeza.py`)
+Consome as bases de boletos e dados cadastrais brutos. Realiza o tratamento de nulos, correção de tipos e filtragem de ruídos, garantindo que a "matéria-prima" da IA seja de alta qualidade.
 
-### Fase 2: O Grafo de Redes de Risco (Neo4j / NetworkX)
-Transformar as faturas em uma malha relacional (Grafos).
-- **Risco de Contágio Reverso:** Ao invés de o fundo olhar se a transportadora "José" é boa pagadora, a máquina olha todos os clientes que sustentam a transportadora. Se clientes pesados na balança (`PageRank`) têm um histórico longo de atraso sistêmico, o motor joga o saldo contaminado na variável de Exposição (`total_exposed_value`) da Transportadora "José".
-- Essa fase funciona localmente em memória (via script), ou integrada via banco distribuído no **AuraDB (Neo4j)**, suportando escalabilidade infinita de volumetria.
+### Fase 2: O Grafo de Redes de Risco (Neo4j AuraDB)
+Transformação das faturas em uma malha relacional.
+- **Risco de Contágio:** Avalia a conectividade entre cedentes e sacados. Se uma empresa está conectada a nós problemáticos da rede, seu score é penalizado via métricas de **PageRank** e **Centralidade**.
+- **Infraestrutura:** Utiliza o **Neo4j AuraDB (Cloud)** para processamento distribuído de grafos em tempo real.
 
-### Fase 3: A Varredura Macroprudencial Autónoma (YAML)
-Uma inteligência "Curadora" (`atualizar_politicas_dinamicas.py`) investiga todo o histórico transacional à la "Auditor Financeiro".
-- **Setores Mercadológicos (CNAE):** Aplica a "Fórmula de Toxidade" do protótipo no nível macro. Em vez de bloquear apenas por calote, o motor avalia o `Risco Composto = Taxa de Default + (1 - (Score Materialidade Médio / 1000))`. Setores com toxidade `> 0.50` entram na Lista Negra (*Tier 1*). Isso protege setores estratégicos que possuem alta materialidade mesmo com atrasos pontuais.
-- **Cedentes:** Bloqueio de novos títulos vindos de fornecedores com calote histórico `> 30%`.
-- Estas Regras Duras não ficam presas no código. Elas são gravadas num documento leve em **YAML**, podendo ser lido instantaneamente por qualquer Frontend de Dashboard ou alterado manualmente por um humano e o fundo as acata *na hora*.
+### Fase 3: Políticas Macroprudenciais Dinâmicas (`politica_risco.yaml`)
+Uma camada de governança que permite ao gestor humano (ou ao script de auditoria) ajustar a "régua" de crédito sem mexer no código.
+- **Lista Negra de Setores (CNAE):** Bloqueio automático de setores com alta toxidade sistêmica.
+- **Bloqueio de Cedentes:** Interrupção de cessão para fornecedores com histórico crítico de inadimplência.
 
-### Fase 4: Inteligência Artificial Dupla (PD, LGD)
-Para entender se o Boleto #003 vai atrasar, não usamos estatística comum.
-- Usamos **`RandomForestClassifier`**: Para calcular a rigorosidade do tombo. Probabilidade de Calote Seco (`Score_PD_Bruto`).
-- Usamos **`RandomForestRegressor`**: Para tentar adivinhar a quantidade de Dias de Atraso cravada!
-As predições juntam Dinheiro (Vlr Normal) e Risco e criam a métrica final dos bancos: a cravosa **Perda Esperada EL**.
+### Fase 4: Inteligência Preditiva (Machine Learning)
+O motor utiliza modelos de **Random Forest** treinados com os dados transacionais e de rede:
+- **Score PD (Probabilidade de Default):** Predição binária da chance de o título não ser pago.
+- **Previsão de Atraso:** Regressor que estima a quantidade de dias de atraso esperada.
 
-### Fase 5: O Tradutor (Interpretabilidade SHAP)
-A matemática da fase 4 é opaca (caixa preta). Portanto, o FIDC emprega a biblioteca **SHAP**. Este módulo entra na cabeça da Arvore de Decisão e "assopra" o motivo exato.
-Nosso código então pega esse motivo e redige um Parecer de Negócio com linguagem de crédito: *"Score punido devido à alta conectividade do fornecedor na malha"*.
+### Fase 5: Explicabilidade (SHAP & XAI)
+Utiliza a biblioteca **SHAP** para quebrar a "caixa preta" do modelo. Para cada decisão, o motor gera um parecer textual amigável (ex: *"Score reduzido devido à alta exposição financeira a pagadores tóxicos"*), permitindo que a mesa de crédito entenda o racional da IA.
 
 ---
 
-## 3. O Relatório de Saída da "Mesa de Crédito"
-No ápice do funil (`pipeline_operacional.py`), o Motor analisa as Hard Rules da Fase 3 contra o Score Preditivo da Fase 4. O Sistema emite um dos seguintes Carimbos Finais por Operação em um CSV/XML limpo e pronto!
-* `[APROVADO_AUTO]`: Sem problemas, ceda o crédito.
-* `[ANALISE_MESA]`: Tem um alerta menor, envie a Mesa de Crédito Operacional revisar.
-* `[REPROVADO_SETORES_CRITICOS]`: Nem entre. Este CNAE está sangrando dinheiro!
-* `[REPROVADO_CEDENTE_TOXICO]`: Cuidado, clientes desse Fornecedor possuem Risco Agudo em Massa!
-* `[REPROVADO_AUTO]`: O Machine Learning apontou que, embora o setor ou fornecedor sejam limpos, aquele boleto individual específico tem forte chance de Default.
+## 3. Entrega Operacional (Endpoints)
 
-## 4. Arquitetura de Produção (Google Cloud Platform)
-
-A solução migrou de um ambiente puramente local para uma arquitetura **Serverless & Robust** no GCP, otimizada para o *Free Tier*:
-
-- **Backend (mfs-api):** Hospedado no **Cloud Run**. 
-    - **Sincronização de Dados:** Implementamos um gerenciador de ativos (`GCSManager`) que, no momento do boot do container, comunica-se com um Bucket privado (`gs://nuclea-mfs-assets-8138`) para baixar os modelos ML (`.joblib`) e as bases históricas de grafos e liquidez. Isso garante que a API seja *stateless* e escalável.
-    - **Segurança:** Protegida por Token JWT e variáveis de ambiente sensíveis.
-- **Frontend (mfs-dashboard):** Hospedado no **Cloud Run** via imagem Nginx customizada.
-    - **Roteamento SPA:** Configurado com `try_files` para garantir que o roteamento do React Router não quebre em caso de recarregamento de página (F5).
-    - **Comunicação:** Conecta-se à API Cloud via HTTPS seguro.
-- **Build & CI/CD:** Utilização do **Cloud Build** com manifestos YAML para automação da montagem das imagens Docker no Artifact Registry.
+O sistema disponibiliza os resultados através de uma API robusta hospedada no **Google Cloud Run**:
+*   `GET /v1/dashboard/summary`: Resumo executivo dos KPIs do portfólio.
+*   `GET /v1/pipeline/report`: Relatórios detalhados para a mesa de crédito (justificativas + vereditos).
+*   `GET /v1/risk/graph`: Dados estruturados para a visualização da teia de risco sistêmico.
 
 ---
 
-## 5. Endpoints e Acessos Oficiais
+## 4. Infraestrutura Cloud (GCP)
 
-A plataforma está operacional e disponível nos seguintes endereços:
-
-*   🌐 **Executivo Dashboard (Frontend):** [https://mfs-dashboard-243998235267.us-central1.run.app](https://mfs-dashboard-243998235267.us-central1.run.app)
-*   ⚙️ **Motor de Inteligência (API Docs):** [https://mfs-api-243998235267.us-central1.run.app/docs](https://mfs-api-243998235267.us-central1.run.app/docs)
-*   📦 **Asset Storage (Bucket GCS):** `gs://nuclea-mfs-assets-8138/data/`
+A solução é 100% **Cloud Native** e otimizada para escalabilidade:
+- **Runtime:** Backend e Frontend isolados em containers no **Cloud Run**.
+- **Storage:** Google Cloud Storage (GCS) utilizado para persistência de modelos `.joblib` e backups de dados.
+- **CI/CD:** Automatizado via **Cloud Build**, garantindo deploys rápidos e seguros.
 
 ---
 
-## 6. Checklist de Manutenção
-Para novos treinamentos de modelo ou atualizações de base:
-1. Gerar novos `.joblib` ou `.csv` localmente.
-2. Fazer o upload para o Bucket GCS na pasta respectiva.
-3. Reiniciar o serviço `mfs-api` no Cloud Run para que o `lifespan` baixe as versões atualizadas.
+## 5. Endpoints de Acesso Oficiais
+
+*   🌐 **Dashboard Executivo:** [https://mfs-backend-564952987470.us-central1.run.app](https://mfs-backend-564952987470.us-central1.run.app) (Frontend integrado)
+*   ⚙️ **Documentação da API (Swagger):** [https://mfs-backend-564952987470.us-central1.run.app/docs](https://mfs-backend-564952987470.us-central1.run.app/docs)
+
 ---
 
-**Versão da Documentação:** 1.3.0  
-**Última Atualização:** 09/05/2026  
-**Status do Projeto:** MVP Operacional (Cloud Ready)
+## 6. Manutenção e Atualização
+Para treinar a IA com novos dados:
+1. Adicione os novos CSVs em `data/raw/`.
+2. Execute `python backend/run_pipeline.py`.
+3. Os novos modelos e relatórios serão gerados e estarão prontos para upload no GCS.
+
+---
+
+**Versão da Documentação:** 2.0.0  
+**Data da Revisão:** 13/05/2026  
+**Status:** Projeto Finalizado & Cloud Ready.

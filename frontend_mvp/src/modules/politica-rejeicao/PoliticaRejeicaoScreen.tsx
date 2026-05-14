@@ -199,20 +199,52 @@ const DecisionTable = ({ data, policy }: { data: PipelineReportItem[], policy: a
   [data, policy]);
 
   const handleExport = () => {
-    const COLS = ['ID_BOLETO','ID_PAGADOR','VALOR_NOMINAL','SCORE_PD','EL_PERDA','DECISAO_MOTOR','DECISAO_SIMULADA'];
+    const COLS = [
+      'id_boleto', 'id_pagador', 'id_beneficiario', 'dt_emissao',
+      'dt_vencimento', 'dt_pagamento', 'vlr_nominal', 'vlr_baixa',
+      'tipo_baixa', 'tipo_especie', 'id_cnpj', 'cd_cnae_prin', 'uf',
+      'sacado_indice_liquidez_1m', 'cedente_indice_liquidez_1m',
+      'score_materialidade_evolucao', 'media_atraso_dias',
+      'indicador_liquidez_quantitativo_3m', 'share_vl_inad_pag_bol_6_a_15d',
+      'score_quantidade_v2', 'score_materialidade_v2', 'score_contagio',
+      'prob_sobrevivencia', 'atraso_previsto_dias',
+      'PD', 'LGD', 'EL', 'STATUS_FINAL', 'MOTIVO_DECISAO',
+    ];
+
     const rows = processedData.map(d => ({
-      ID_BOLETO:      d.id_boleto,
-      ID_PAGADOR:     d.id_pagador,
-      VALOR_NOMINAL:  d.vlr_nominal,
-      SCORE_PD:       d.score_pd,
-      EL_PERDA:       d.perda_el,
-      DECISAO_MOTOR:  d.decisao,
-      DECISAO_SIMULADA:    d.decisao_sim,
+      id_boleto:        d.id_boleto,
+      id_pagador:       d.id_pagador,
+      id_beneficiario:  d.id_beneficiario ?? null,
+      dt_emissao:       d.dt_emissao ?? null,
+      dt_vencimento:    d.dt_vencimento ?? null,
+      dt_pagamento:     d.dt_pagamento ?? null,
+      vlr_nominal:      d.vlr_nominal,
+      vlr_baixa:        d.vlr_baixa ?? null,
+      tipo_baixa:       d.tipo_baixa ?? null,
+      tipo_especie:     d.tipo_especie ?? null,
+      id_cnpj:          d.id_cnpj ?? null,
+      cd_cnae_prin:     d.cd_cnae_prin ?? null,
+      uf:               d.uf ?? null,
+      sacado_indice_liquidez_1m:          d.sacado_indice_liquidez_1m ?? null,
+      cedente_indice_liquidez_1m:         d.cedente_indice_liquidez_1m ?? null,
+      score_materialidade_evolucao:       d.score_materialidade_evolucao ?? null,
+      media_atraso_dias:                  d.media_atraso_dias ?? null,
+      indicador_liquidez_quantitativo_3m: d.indicador_liquidez_quantitativo_3m ?? null,
+      share_vl_inad_pag_bol_6_a_15d:     d.share_vl_inad_pag_bol_6_a_15d ?? null,
+      score_quantidade_v2:    d.score_quantidade_v2 ?? null,
+      score_materialidade_v2: d.score_materialidade_v2 ?? null,
+      score_contagio:         d.score_contagio ?? null,
+      prob_sobrevivencia:     d.prob_sobrevivencia ?? null,
+      atraso_previsto_dias:   d.atraso_previsto_dias ?? null,
+      PD:            d.PD,
+      LGD:           d.LGD ?? null,
+      EL:            d.EL,
+      STATUS_FINAL:  d.STATUS_FINAL,
+      MOTIVO_DECISAO: d.MOTIVO_DECISAO ?? null,
     }));
 
     const ws = XLSXStyle.utils.json_to_sheet(rows);
 
-    // Estilo do cabeçalho
     const headerStyle = {
       font: { bold: true, color: { rgb: '1A202C' } },
       fill: { fgColor: { rgb: '73F3C7' } },
@@ -223,16 +255,19 @@ const DecisionTable = ({ data, policy }: { data: PipelineReportItem[], policy: a
       if (ws[addr]) ws[addr].s = headerStyle;
     });
 
-    // Cor baseada em DECISAO_SIMULADA (política simulada):
-    // Vermelho → simulação bloqueia | Amarelo → motor pede revisão MAS simulação aprova | Sem cor → aprovado
+    // Verde → aprovado | Amarelo → análise de mesa | Vermelho → reprovado
     rows.forEach((row, ri) => {
-      const blocked = row.DECISAO_SIMULADA === 'BLOQUEADO';
-      const review  = row.DECISAO_MOTOR === 'ANALISE_MESA' && row.DECISAO_SIMULADA === 'APROVADO';
-      if (!blocked && !review) return;
+      const sf      = row.STATUS_FINAL ?? '';
+      const blocked = sf.startsWith('REPROVADO');
+      const review  = sf === 'ANALISE_MESA';
+      const approved = sf === 'APROVADO_AUTO';
 
-      const fill = blocked
-        ? { fgColor: { rgb: 'FFCCCC' } }   // vermelho claro
-        : { fgColor: { rgb: 'FFF9CC' } };   // amarelo claro (revisão)
+      const fill = blocked  ? { fgColor: { rgb: 'FFCCCC' } }   // vermelho claro
+                 : review   ? { fgColor: { rgb: 'FFF9CC' } }   // amarelo claro
+                 : approved ? { fgColor: { rgb: 'CCFFEE' } }   // verde claro (mint)
+                 : null;
+
+      if (!fill) return;
 
       COLS.forEach((_, ci) => {
         const addr = XLSXStyle.utils.encode_cell({ r: ri + 1, c: ci });
@@ -240,7 +275,17 @@ const DecisionTable = ({ data, policy }: { data: PipelineReportItem[], policy: a
       });
     });
 
-    ws['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 14 }, { wch: 10 }, { wch: 12 }, { wch: 22 }, { wch: 14 }];
+    ws['!cols'] = [
+      { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 14 }, // id_boleto, id_pagador, id_beneficiario, dt_emissao
+      { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, // dt_vencimento, dt_pagamento, vlr_nominal, vlr_baixa
+      { wch: 12 }, { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 6 }, // tipo_baixa, tipo_especie, id_cnpj, cd_cnae, uf
+      { wch: 26 }, { wch: 26 }, { wch: 26 }, { wch: 16 }, // sacado_liq, cedente_liq, score_mat_ev, media_atraso
+      { wch: 32 }, { wch: 28 }, // indicador_liq_3m, share_inad
+      { wch: 18 }, { wch: 20 }, { wch: 14 }, // score_qtd_v2, score_mat_v2, score_contagio
+      { wch: 16 }, { wch: 20 }, // prob_sobrevivencia, atraso_previsto_dias
+      { wch: 10 }, { wch: 10 }, { wch: 14 }, // PD, LGD, EL
+      { wch: 24 }, { wch: 60 }, // STATUS_FINAL, MOTIVO_DECISAO
+    ];
 
     const wb = XLSXStyle.utils.book_new();
     XLSXStyle.utils.book_append_sheet(wb, ws, 'Recomendacoes');
