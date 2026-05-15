@@ -13,7 +13,7 @@ const PsiGauge = ({ value }: { value: number }) => {
 
   return (
     <BentoCell 
-      title="Status Global PSI" 
+      title="PSI (Estabilidade do Modelo)" 
       tooltip="Mede a estabilidade populacional dos dados. Identifica se o comportamento atual das empresas divergiu do padrão de treinamento do modelo, sinalizando a necessidade de calibração ou retreino da IA."
       className="col-span-1 h-[320px] flex flex-col"
     >
@@ -57,7 +57,7 @@ const PsiGauge = ({ value }: { value: number }) => {
 const PerformanceCards = ({ ks, auc }: { ks: number, auc: number }) => (
   <div className="col-span-1 flex flex-col gap-4 h-[320px]">
     <BentoCell 
-      title="Estatística KS" 
+      title="KS (Poder de Separação)" 
       tooltip="Principal métrica de poder de separação. Quantifica a eficácia do modelo em distinguir entre perfis de bons e maus pagadores, garantindo a precisão na seleção de ativos."
       className="flex-1 flex flex-col relative"
       extra={
@@ -77,7 +77,7 @@ const PerformanceCards = ({ ks, auc }: { ks: number, auc: number }) => (
       </div>
     </BentoCell>
     <BentoCell 
-      title="AUC-ROC" 
+      title="AUC (Qualidade Global)" 
       tooltip="Representa a qualidade global das previsões. Avalia a performance do modelo em classificar corretamente o risco em diferentes níveis de corte, equilibrando a sensibilidade e a especificidade das decisões."
       className="flex-1 flex flex-col relative"
       extra={
@@ -115,7 +115,7 @@ const PolicyControl = ({ initialThresholds, onPublish }: { initialThresholds: an
 
   return (
     <BentoCell 
-      title="Controle de Thresholds (Simulador Interativo)" 
+      title="Parâmetros de Decisão (Simulador Interativo)" 
       tooltip="Simulador de políticas de crédito. Permite configurar os limites de aprovação automática e revisão manual baseados na probabilidade de default (PD) e exposição financeira total."
       className="col-span-2 h-[320px] overflow-hidden flex flex-col relative"
     >
@@ -153,7 +153,7 @@ const PolicyControl = ({ initialThresholds, onPublish }: { initialThresholds: an
             <pre className="text-white/50 whitespace-pre">
   <span className="text-heat">policy_id</span>: <span className="text-lime">"POL_SIM_DRAFT_MFS_2026_PROD_NUCLEA_FINAL_VERSION_V1_STABLE_BUILD_X99"</span>
   <span className="text-heat">status</span>: <span className="text-lime">"TESTING"</span>
-  <span className="text-heat">thresholds</span>:
+  <span className="text-heat">parâmetros_decisão</span>:
     <span className="text-mint">auto_approve_pd</span>: <span className="text-white">{autoApprovePd.toFixed(3)}</span>
     <span className="text-mint">manual_review_pd</span>: <span className="text-white">{manualReviewPd.toFixed(3)}</span>
     <span className="text-mint">max_exposure_brl</span>: <span className="text-white">{maxExposure}</span>
@@ -248,7 +248,7 @@ const ModelInfoBar = ({ info }: { info: any }) => {
 const AuditLogs = ({ logs }: { logs: any[] }) => {
   return (
     <BentoCell 
-      title="Logs de Auditoria (Governança MFS)" 
+      title="Vigilância Atuarial e Estabilidade (PSI)" 
       tooltip="Trilha de transparência e conformidade. Registra todas as ações humanas e automáticas aplicadas ao modelo e às políticas, assegurando a rastreabilidade exigida por órgãos reguladores."
       className="col-span-2 h-[320px]"
     >
@@ -303,7 +303,7 @@ export const GovernancaScreen = () => {
     const newLog = {
       date: formattedDate,
       user: "USER_CURRENT (Dashboard)",
-      action: "UPDATE_THRESHOLD",
+      action: "AJUSTE_PARAMETROS",
       details: `auto: ${newPolicy.auto.toFixed(3)} | manual: ${newPolicy.manual.toFixed(3)}`,
       reason: "Simulação aplicada via interface MLOps"
     };

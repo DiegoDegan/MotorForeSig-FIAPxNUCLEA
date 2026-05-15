@@ -99,7 +99,7 @@ export const PDPerdaEstimadaScreen = () => {
         </BentoCell>
 
         <BentoCell 
-          title="PD Média da Carteira" 
+          title="PD (Inadimplência) Média da Carteira" 
           icon={TrendingDown}
           tooltip="Média ponderada da Probabilidade de Default de todos os pagadores ativos na carteira."
         >
@@ -135,7 +135,7 @@ export const PDPerdaEstimadaScreen = () => {
 
         {/* ① EL por Faixa de Score ─────────────────────────────────── */}
         <BentoCell
-          title="EL por Faixa de Score de Materialidade"
+          title="EL (Perda Esperada) por Faixa de Score"
           tooltip="Perda esperada acumulada agrupada por bucket de score_materialidade_v2. Buckets de menor score concentram maior risco individual, porém menor volume de boletos."
           className="h-[380px] flex flex-col"
         >
@@ -193,7 +193,7 @@ export const PDPerdaEstimadaScreen = () => {
 
         {/* ② Scatter — Exposição vs PD ─────────────────────────────── */}
         <BentoCell
-          title="Dispersão — Exposição vs PD por Empresa"
+          title="Dispersão — Exposição vs PD (Inadimplência)"
           tooltip="Cada ponto é um pagador. Quadrante superior-direito = maior exposição E maior PD = Top Risks. Cor: verde=baixo risco, vermelho=crítico."
           className="h-[380px] flex flex-col"
         >
@@ -255,7 +255,7 @@ export const PDPerdaEstimadaScreen = () => {
 
         {/* ③ Risco por UF ──────────────────────────────────────────── */}
         <BentoCell
-          title="Risco por UF — EL Esperado por Estado (Top 10)"
+          title="Risco por UF — EL (Perda Esperada) por Estado"
           tooltip="Distribuição geográfica da perda esperada. Estados com alta concentração de boletos de baixo score acumulam maior EL proporcional."
           className="h-[380px] flex flex-col"
         >
@@ -308,7 +308,7 @@ export const PDPerdaEstimadaScreen = () => {
 
         {/* ④ Histograma de Score ───────────────────────────────────── */}
         <BentoCell
-          title="Distribuição de Score de Materialidade"
+          title="Rating de Qualidade do Lastro (MFS)"
           tooltip="Frequência de boletos por faixa de score_materialidade_v2 (0–1000). Concentração à direita indica carteira saudável; picos à esquerda sinalizam risco elevado."
           className="h-[380px] flex flex-col"
         >

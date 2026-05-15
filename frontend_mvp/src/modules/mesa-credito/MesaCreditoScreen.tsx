@@ -84,7 +84,7 @@ const ShapDrawer = ({ operation, onClose, onAction, limit }: { operation: Pipeli
         </div>
 
         <div className="mb-2 flex justify-between items-end">
-          <h3 className="text-xs font-mono text-white/50 uppercase tracking-widest">PERFIL DE RISCO (SHAP CATEGORIZADO)</h3>
+          <h3 className="text-xs font-mono text-white/50 uppercase tracking-widest">PERFIL DE RISCO (JUSTIFICATIVA DA IA)</h3>
         </div>
         
         <div className="bg-obsidian border border-white/5 rounded-lg p-5 mb-8">
@@ -164,7 +164,7 @@ const ShapDrawer = ({ operation, onClose, onAction, limit }: { operation: Pipeli
             onClick={() => setShowReasonBox("APROVAR")}
             className="flex-1 py-3 bg-mint/20 border border-mint/30 text-mint font-display font-bold tracking-widest rounded-lg hover:bg-mint hover:text-obsidian transition-colors text-[10px]"
           >
-            {operation.acao_sugerida === 'BLOQUEAR' ? 'APROVAR OVERRIDE' : 'APROVAR AUTO'}
+            {operation.acao_sugerida === 'BLOQUEAR' ? 'APROVAÇÃO MANUAL' : 'APROVAR AUTO'}
           </button>
         </div>
       </div>
@@ -216,7 +216,7 @@ export const MesaCreditoScreen = () => {
   return (
     <div className="flex gap-6 h-full items-start">
       <div className={`flex-1 transition-all duration-300 ${selectedOp ? 'w-[calc(100%-444px)]' : 'w-full'}`}>
-        <TopNav title="MESA DE CRÉDITO" subtitle="OPERACIONAL / PIPELINE" />
+        <TopNav title="MESA DE CRÉDITO" subtitle="OPERACIONAL / FLUXO DE OPERAÇÕES" />
         
         <div className="flex gap-4 mb-6">
           <div className="px-4 py-2 bg-obsidian-light border border-white/10 text-white/50 font-mono text-xs rounded-lg flex items-center gap-2">

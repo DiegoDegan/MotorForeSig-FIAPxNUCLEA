@@ -126,7 +126,7 @@ const GaugeMaterialidade = ({ score, className = "" }: { score: number, classNam
 
   return (
     <BentoCell 
-      title="Score Médio de Materialidade" 
+      title="Rating de Qualidade do Lastro (MFS)" 
       tooltip="Índice de saúde financeira da carteira baseado no cruzamento de dados de pagadores e base auxiliar."
       className={`flex flex-col ${className}`}
     >
@@ -319,7 +319,7 @@ export const CockpitScreen = () => {
 
         {/* TreeMap — 3 cols */}
         <BentoCell
-          title="Distribuição por Setor (CNAE)"
+          title="Exposição Setorial e Capilaridade"
           tooltip="Visualização proporcional do volume financeiro alocado em cada setor da economia através do CNAE do pagador."
           className="col-span-1 lg:col-span-3 h-[460px] flex flex-col"
         >
@@ -353,7 +353,7 @@ export const CockpitScreen = () => {
 
         {/* Donut — 2 cols */}
         <BentoCell
-          title="Status de Pagamento"
+          title="Composição de Adimplência Operacional"
           tooltip="Divisão quantitativa de boletos por sua situação atual (pago no prazo, atrasado, etc)."
           className="col-span-1 lg:col-span-2 h-[460px] flex flex-col"
         >
@@ -437,7 +437,7 @@ export const CockpitScreen = () => {
         
         {/* Tendência Mensal */}
         <BentoCell
-          title="Tendência Mensal — Volume por Status"
+          title="Sazonalidade e Performance de Liquidação"
           tooltip="Evolução temporal do volume financeiro liquidado, segregando pagamentos feitos no prazo vs atrasados."
           className="lg:col-span-7 h-[380px] flex flex-col"
         >

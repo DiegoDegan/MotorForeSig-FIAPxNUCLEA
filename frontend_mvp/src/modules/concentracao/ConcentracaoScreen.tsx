@@ -111,7 +111,7 @@ export const ConcentracaoScreen = () => {
       {/* ── KPIs ─────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <BentoCell 
-          title="Índice HHI (Concentração Setorial)" 
+          title="Índice de Granularidade do Portfólio" 
           tooltip="Índice Herfindahl-Hirschman: mede a concentração de mercado. Valores altos indicam dependência excessiva de poucos setores."
         >
           <div className="mt-2">
@@ -128,7 +128,7 @@ export const ConcentracaoScreen = () => {
         </BentoCell>
 
         <BentoCell 
-          title="Concentração Top 5 Pagadores"
+          title="Exposição Crítica por Sacado (VME)"
           tooltip="Representatividade dos 5 maiores pagadores (sacados) no volume total da carteira."
         >
           <div className="mt-2">
@@ -337,7 +337,7 @@ export const ConcentracaoScreen = () => {
 
         {/* Maiores Exposições */}
         <BentoCell 
-          title="Top 10 Maiores Exposições" 
+          title="Concentração de Originação" 
           tooltip="Ranking das entidades com maior volume financeiro alocado na carteira."
           className="h-[320px] flex flex-col"
         >

@@ -32,8 +32,8 @@ const KaplanMeierChart = ({ kmData, className = "" }: { kmData: any[], className
 
   return (
     <BentoCell
-      title="Curva de Sobrevivência (Kaplan-Meier proxy)"
-      tooltip="Estima a probabilidade de liquidação do ativo ao longo do tempo (time-to-event)."
+      title="Curva de Sobrevivência e Tempo até Liquidação"
+      tooltip="Estima a probabilidade de liquidação do ativo ao longo do tempo (tempo até liquidação)."
       className={`h-[400px] lg:h-full ${className}`}
     >
       <div className="mt-4 flex h-full w-full pb-6 pl-2">
@@ -195,7 +195,7 @@ export const RiscoSistemicoScreen = () => {
 
   return (
     <div className="flex flex-col flex-1 pb-10">
-      <TopNav title="RISCO SISTÊMICO" subtitle="ANÁLISE CONTÁGIO GRAFO" />
+      <TopNav title="RISCO SISTÊMICO" subtitle="MAPEAMENTO DE CONTÁGIO SISTÊMICO" />
 
       <div className="flex flex-col gap-6 mt-6">
         
@@ -216,7 +216,7 @@ export const RiscoSistemicoScreen = () => {
             <div className="text-[10px] font-mono text-white/40 mt-1 uppercase tracking-widest">Conexões médias por empresa</div>
           </BentoCell>
           <BentoCell 
-            title="Tempo Médio de Recuperação"
+            title="Eficiência de Back-Office e Liquidação"
             tooltip="Prazo médio decorrido entre a data de vencimento e a liquidação efetiva do título para ativos que sofreram atraso."
           >
             <div className="text-3xl font-mono font-bold text-white mt-2">4.7 <span className="text-base font-normal text-white/50">dias</span></div>
@@ -327,7 +327,7 @@ export const RiscoSistemicoScreen = () => {
 
         {/* TOP 10 REDES CONECTADAS */}
         <BentoCell 
-          title="Mapa de Contágio: Redes mais perigosas" 
+          title="Clusters de Criticidade Máxima" 
           icon={ShieldAlert}
           tooltip="Agrupamento de empresas (clusters) conectadas por relações financeiras. Redes com alta Perda Esperada sinalizam que a quebra de uma entidade pode desencadear inadimplência em cascata no grupo."
         >

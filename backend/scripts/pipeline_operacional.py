@@ -101,9 +101,18 @@ def rodar_pipeline():
 
         # Re-attach colunas descartadas no build da base de modelagem para compor o relatório final
         _bol_raw = pd.read_csv(os.path.join(processed_dir, 'base_boletos_tratados.csv'))
-        _extra = [c for c in ['id_boleto', 'dt_vencimento', 'dt_pagamento', 'tipo_baixa', 'tipo_especie', 'uf'] if c in _bol_raw.columns]
-        df_lote = df_lote.merge(_bol_raw[_extra], on='id_boleto', how='left')
+        _extra_bol = [c for c in ['id_boleto', 'dt_vencimento', 'dt_pagamento', 'tipo_baixa', 'tipo_especie'] if c in _bol_raw.columns]
+        df_lote = df_lote.merge(_bol_raw[_extra_bol], on='id_boleto', how='left')
         del _bol_raw
+
+        # uf vem da base auxiliar (id_cnpj = id_pagador)
+        _aux_raw = pd.read_csv(os.path.join(processed_dir, 'base_auxiliar_tratada.csv'))
+        if 'uf' in _aux_raw.columns and 'id_cnpj' in _aux_raw.columns:
+            df_lote = df_lote.merge(
+                _aux_raw[['id_cnpj', 'uf']].rename(columns={'id_cnpj': 'id_pagador'}),
+                on='id_pagador', how='left'
+            )
+        del _aux_raw
         
         logger.info("3. Formatando Vetores para IA...")
         X = df_lote.copy()
@@ -161,8 +170,8 @@ def rodar_pipeline():
             'sacado_indice_liquidez_1m', 'cedente_indice_liquidez_1m',
             'score_materialidade_evolucao', 'media_atraso_dias',
             'indicador_liquidez_quantitativo_3m', 'share_vl_inad_pag_bol_6_a_15d',
-            'score_quantidade_v2', 'score_materialidade_v2', 'score_contagio',
-            'prob_sobrevivencia', 'atraso_previsto_dias',
+            'score_quantidade_v2', 'score_materialidade_v2',
+            'atraso_previsto_dias',
             'PD', 'LGD', 'EL', 'STATUS_FINAL', 'MOTIVO_DECISAO',
             # colunas originais mantidas para compatibilidade com o dashboard
             'score_pd_bruto', 'perda_esperada_el', 'decisao_politica',
@@ -188,7 +197,7 @@ def rodar_pipeline():
         print(f"Valor Face:   R$ {teste.get('vlr_nominal', 0):,.2f}")
         print(f"Risco (PD):   {teste['score_pd_bruto']:.2%}")
         print(f"Perda EL:     R$ {teste.get('perda_esperada_el', 0):,.2f}")
-        print(f"Dias de Atraso Previstos: {teste['atraso_previsto']:.1f}")
+        print(f"Dias de Atraso Previstos: {teste.get('atraso_previsto_dias', teste.get('atraso_previsto', 0)):.1f}")
         print(f"VEREDITO:     >>> {teste['decisao_politica']} <<<")
         print(f"Resumo da IA: {teste['parecer_ia_shap']}")
         print("---------------------------------------------------------")

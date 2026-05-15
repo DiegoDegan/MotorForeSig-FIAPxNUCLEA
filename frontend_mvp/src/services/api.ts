@@ -217,8 +217,6 @@ export interface PipelineReportItem {
   share_vl_inad_pag_bol_6_a_15d?: number | null;
   score_quantidade_v2?: number | null;
   score_materialidade_v2?: number | null;
-  score_contagio?: number | null;
-  prob_sobrevivencia?: number | null;
   atraso_previsto_dias?: number | null;
   // métricas de crédito
   PD: number;

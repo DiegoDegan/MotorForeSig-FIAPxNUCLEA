@@ -94,7 +94,7 @@ const DecisionHeatmap = ({ data, scoreBins, liqBins, effectiveScore, contagioRat
 
   return (
     <BentoCell
-      title="Matriz de Decisão — Score × Liquidez"
+      title="Matriz de Underwriting e Assertividade"
       tooltip="Cor = taxa de inadimplência histórica. Células esmaecidas = bloqueadas pela régua de score. Células com borda laranja = zona de risco de contágio (default_rate acima da tolerância configurada)."
       className="h-[380px] flex flex-col"
     >
@@ -206,8 +206,8 @@ const DecisionTable = ({ data, policy }: { data: PipelineReportItem[], policy: a
       'sacado_indice_liquidez_1m', 'cedente_indice_liquidez_1m',
       'score_materialidade_evolucao', 'media_atraso_dias',
       'indicador_liquidez_quantitativo_3m', 'share_vl_inad_pag_bol_6_a_15d',
-      'score_quantidade_v2', 'score_materialidade_v2', 'score_contagio',
-      'prob_sobrevivencia', 'atraso_previsto_dias',
+      'score_quantidade_v2', 'score_materialidade_v2',
+      'atraso_previsto_dias',
       'PD', 'LGD', 'EL', 'STATUS_FINAL', 'MOTIVO_DECISAO',
     ];
 
@@ -233,8 +233,6 @@ const DecisionTable = ({ data, policy }: { data: PipelineReportItem[], policy: a
       share_vl_inad_pag_bol_6_a_15d:     d.share_vl_inad_pag_bol_6_a_15d ?? null,
       score_quantidade_v2:    d.score_quantidade_v2 ?? null,
       score_materialidade_v2: d.score_materialidade_v2 ?? null,
-      score_contagio:         d.score_contagio ?? null,
-      prob_sobrevivencia:     d.prob_sobrevivencia ?? null,
       atraso_previsto_dias:   d.atraso_previsto_dias ?? null,
       PD:            d.PD,
       LGD:           d.LGD ?? null,
@@ -281,8 +279,8 @@ const DecisionTable = ({ data, policy }: { data: PipelineReportItem[], policy: a
       { wch: 12 }, { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 6 }, // tipo_baixa, tipo_especie, id_cnpj, cd_cnae, uf
       { wch: 26 }, { wch: 26 }, { wch: 26 }, { wch: 16 }, // sacado_liq, cedente_liq, score_mat_ev, media_atraso
       { wch: 32 }, { wch: 28 }, // indicador_liq_3m, share_inad
-      { wch: 18 }, { wch: 20 }, { wch: 14 }, // score_qtd_v2, score_mat_v2, score_contagio
-      { wch: 16 }, { wch: 20 }, // prob_sobrevivencia, atraso_previsto_dias
+      { wch: 18 }, { wch: 20 }, // score_qtd_v2, score_mat_v2
+      { wch: 20 }, // atraso_previsto_dias
       { wch: 10 }, { wch: 10 }, { wch: 14 }, // PD, LGD, EL
       { wch: 24 }, { wch: 60 }, // STATUS_FINAL, MOTIVO_DECISAO
     ];
@@ -524,7 +522,7 @@ export const PoliticaRejeicaoScreen = () => {
             onChange={setScoreMin}
           />
           <PolicySlider
-            label="Limite Máximo de PD"
+            label="Limite Máximo de PD (Inadimplência)"
             value={maxPD}
             min={5}
             max={90}
@@ -575,7 +573,7 @@ export const PoliticaRejeicaoScreen = () => {
 
       {/* ── Economia de Perda (30%) ── */}
       <BentoCell 
-        title="Economia de Perda" 
+        title="Economicidade e Perda Evitada" 
         tooltip="Montante financeiro de Perda Esperada (EL) que deixará de entrar na carteira caso a política simulada seja aplicada. Representa o valor 'salvo' pelo motor de risco."
         className="col-span-3 flex flex-col justify-between"
       >
@@ -643,7 +641,7 @@ export const PoliticaRejeicaoScreen = () => {
         </BentoCell>
 
         <BentoCell 
-          title={isDefault ? 'Taxa de Rejeição' : 'Rejeição Simulada'} 
+          title={isDefault ? 'Índice de Seletividade de Ativos' : 'Seletividade Simulada'} 
           tooltip="Percentual de operações bloqueadas pelos filtros de Score, PD ou Contágio. Reflete o rigor da política em descartar ativos de alto risco."
           status="heat" 
           icon={ShieldAlert}
@@ -688,7 +686,7 @@ export const PoliticaRejeicaoScreen = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
         <BentoCell
-          title="Impacto do Corte — Receita vs Inadimplência por Threshold"
+          title="Impacto do Corte — Receita vs Inadimplência por Parâmetros de Decisão"
           tooltip="Arraste o slider de Score para ver como a linha vertical se move e quais métricas mudam. O 'sweet spot' fica onde as curvas mais se afastam."
           className="h-[380px] flex flex-col"
         >
