@@ -42,13 +42,11 @@ flowchart TD
             MergeBase{{"montar_base_modelagem.py\n(Merge Global)"}}:::compute
             Trainer["model_trainer.py\n(Random Forest PD)"]:::mlEngine
             SHAP["explicabilidade.py\n(SHAP Explainability)"]:::mlEngine
-            YAML[/"politica_risco.yaml\n(Regras de Negócio)"/]:::rawData
+            WB[(Weights & Biases\nMLOps Monitoring)]:::infra
             
-            Limp --> MergeBase
-            NetX --> MergeBase
             MergeBase --> Trainer
             Trainer --> SHAP
-            MergeBase --> YAML
+            Trainer -.->|Logging| WB
         end
 
         subgraph Runtime [4. Backend Gateway - Cloud Run]
@@ -57,20 +55,20 @@ flowchart TD
             
             Trainer -.->|Exporta .joblib| GCS
             GCS -.->|Hot-Reload| FastAPI
+            WB -.->|Métricas| FastAPI
             SHAP --> FastAPI
-            YAML --> FastAPI
         end
 
         subgraph Frontend [5. Camada de Apresentação]
             Cockpit[Cockpit Portfolio\nKPIs Ativos]:::frontend
             SysRisk[Risco Sistêmico\nVisualização D3]:::frontend
             CreditDesk[Mesa de Crédito\nJustificativa IA]:::frontend
-            Report[Relatórios de Pipeline\nTransparência]:::frontend
+            GovML[Governança & MLOps\nEstabilidade PSI]:::frontend
             
             FastAPI <-->|JSON Stream| Cockpit
             FastAPI <-->|Relational Graph| SysRisk
             FastAPI <-->|SHAP Feedback| CreditDesk
-            FastAPI --> Report
+            FastAPI <-->|W&B Data| GovML
         end
     end
 ```
