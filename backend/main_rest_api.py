@@ -670,10 +670,10 @@ async def get_portfolio_summary(risk_band: Optional[str] = None, current_user: s
     [PROTEGIDO] Retorna um resumo agregado da carteira lendo os arquivos CSV reais e aplicando métricas de negócio.
     """
     try:
-        # 1. Carregar Dados da RAM (Zero Disk I/O)
-        df_pipeline = ml_components['df_pipeline']
-        df_grafo = ml_components['df_grafo']
-        df_aux = ml_components['df_aux']
+        # 1. Carregar Dados da RAM (Zero Disk I/O) com .copy() para segurança de concorrência
+        df_pipeline = ml_components['df_pipeline'].copy()
+        df_grafo = ml_components['df_grafo'].copy()
+        df_aux = ml_components['df_aux'].copy()
 
         # 2. Filtragem por Faixa de Risco (PD)
         # Low: < 0.2, Mid: 0.2 - 0.5, High: > 0.5
@@ -797,7 +797,7 @@ async def get_portfolio_summary(risk_band: Optional[str] = None, current_user: s
             })
 
         # 8. Métricas Tela 1 (Visão Geral) e Visão Macro de Concentração
-        df_boletos = ml_components['df_boletos']
+        df_boletos = ml_components['df_boletos'].copy()
 
         # Merge completo para visão macro de UF e Liquidez
         df_macro = df_boletos.merge(
