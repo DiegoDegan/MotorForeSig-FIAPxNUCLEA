@@ -113,8 +113,24 @@ async def lifespan(app: FastAPI):
         else:
             print(f"WARN: Modelo de Atraso em {MODEL_ATRASO_PATH} não encontrado.")
             
+        print("INFO: Carregando CSVs na memória (RAM) para alta performance...")
+        ml_components['df_pipeline'] = pd.read_csv(PIPELINE_CSV)
+        ml_components['df_grafo'] = pd.read_csv(GRAFO_CSV)
+        ml_components['df_aux'] = pd.read_csv(BASE_AUX_CSV)
+        ml_components['df_boletos'] = pd.read_csv(BOLETOS_CSV)
+        
+        print("INFO: Pré-computando Grafo de Risco Sistêmico (NetworkX)...")
+        import networkx as nx
+        G = nx.Graph()
+        for _, row in ml_components['df_grafo'].iterrows():
+            bid = str(row['id_beneficiario'])
+            pid = str(row['id_pagador'])
+            G.add_edge(bid, pid, weight=float(row.get('avg_payer_risk', 0.1)), value=float(row.get('total_exposed_value', 0)))
+        ml_components['nx_graph'] = G
+        print("INFO: Grafo computado e salvo na memória com sucesso!")
+            
     except Exception as e:
-        print(f"ERROR: Falha ao carregar modelos: {e}")
+        print(f"ERROR: Falha ao carregar modelos ou dados: {e}")
         
     yield  # Aplicação roda aqui
     
@@ -463,7 +479,7 @@ async def get_systemic_risk(current_user: str = Depends(get_current_user)):
     Prioriza os 'Mega-Hubs' (exposição) e 'Zonas Vermelhas' (risco PD).
     """
     try:
-        df = pd.read_csv(GRAFO_CSV)
+        df = ml_components['df_grafo'] # Lendo direto da RAM
         
         # 1. Seleção Inteligente: Varredura reduzida em 25% conforme solicitado para otimização visual
         # Top 300 por Exposição e Top 300 por Risco
@@ -527,11 +543,7 @@ async def get_systemic_risk(current_user: str = Depends(get_current_user)):
             })
             
         # 2. Extração das Top 10 Redes Conectadas (Connected Components)
-        G = nx.Graph()
-        for _, row in df.iterrows():
-            bid = str(row['id_beneficiario'])
-            pid = str(row['id_pagador'])
-            G.add_edge(bid, pid, weight=float(row.get('avg_payer_risk', 0.1)), value=float(row.get('total_exposed_value', 0)))
+        G = ml_components['nx_graph'] # Grafo já computado na inicialização da API
 
         components_data = []
         for i, comp in enumerate(nx.connected_components(G)):
@@ -658,10 +670,10 @@ async def get_portfolio_summary(risk_band: Optional[str] = None, current_user: s
     [PROTEGIDO] Retorna um resumo agregado da carteira lendo os arquivos CSV reais e aplicando métricas de negócio.
     """
     try:
-        # 1. Carregar Dados
-        df_pipeline = pd.read_csv(PIPELINE_CSV)
-        df_grafo = pd.read_csv(GRAFO_CSV)
-        df_aux = pd.read_csv(BASE_AUX_CSV)
+        # 1. Carregar Dados da RAM (Zero Disk I/O)
+        df_pipeline = ml_components['df_pipeline']
+        df_grafo = ml_components['df_grafo']
+        df_aux = ml_components['df_aux']
 
         # 2. Filtragem por Faixa de Risco (PD)
         # Low: < 0.2, Mid: 0.2 - 0.5, High: > 0.5
@@ -785,7 +797,7 @@ async def get_portfolio_summary(risk_band: Optional[str] = None, current_user: s
             })
 
         # 8. Métricas Tela 1 (Visão Geral) e Visão Macro de Concentração
-        df_boletos = pd.read_csv(BOLETOS_CSV)
+        df_boletos = ml_components['df_boletos']
 
         # Merge completo para visão macro de UF e Liquidez
         df_macro = df_boletos.merge(

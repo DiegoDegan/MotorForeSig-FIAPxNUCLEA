@@ -133,7 +133,9 @@ export const ConcentracaoScreen = () => {
         >
           <div className="mt-2">
             <span className="text-3xl font-mono font-bold tracking-tighter text-white">
-              {summary.top_pagadores_pareto.slice(0, 5).reduce((a, b) => a + b.acumulado_pct, 0).toFixed(1)}%
+              {summary.top_pagadores_pareto.length > 0 
+                ? summary.top_pagadores_pareto[Math.min(4, summary.top_pagadores_pareto.length - 1)].acumulado_pct.toFixed(1) 
+                : "0.0"}%
             </span>
             <div className="text-xs font-mono text-white/40 mt-1 uppercase tracking-widest">
               exposição total nos 5 maiores sacados

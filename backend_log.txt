@@ -1,0 +1,146 @@
+WARNING:core.gcs_manager:Variável GCP_BUCKET_NAME não configurada. GCSManager instanciado em modo inativo.
+INFO:     Started server process [27120]
+INFO:     Waiting for application startup.
+C:\Users\Degan\Documents\Antigravity\Nuclea\backend\main_rest_api.py:94: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "data_atualizacao": datetime.utcnow().isoformat()
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+C:\Users\Degan\Documents\Antigravity\Nuclea\backend\main_rest_api.py:301: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  expire = datetime.utcnow() + expires_delta
+INFO: Modelo PD e SHAP Explainer carregados com sucesso.
+INFO: Modelo Atraso carregado com sucesso.
+INFO:     127.0.0.1:52644 - "POST /v1/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54997 - "POST /v1/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54997 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52644 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+wandb: [wandb.Api()] Loaded credentials for https://api.wandb.ai from WANDB_API_KEY.
+INFO:     127.0.0.1:52644 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54997 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53859 - "OPTIONS /v1/politica/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59641 - "OPTIONS /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55986 - "OPTIONS /v1/pipeline/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51408 - "OPTIONS /v1/politica/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61876 - "OPTIONS /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52089 - "OPTIONS /v1/pipeline/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53859 - "GET /v1/politica/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52089 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53859 - "GET /v1/pipeline/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52410 - "GET /v1/politica/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58272 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52089 - "GET /v1/pipeline/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60060 - "OPTIONS /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60060 - "OPTIONS /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60060 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60060 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55515 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50924 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56942 - "OPTIONS /v1/pd/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59056 - "OPTIONS /v1/pd/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59056 - "GET /v1/pd/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56942 - "GET /v1/pd/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56942 - "OPTIONS /v1/systemic/risk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59056 - "OPTIONS /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56942 - "OPTIONS /v1/systemic/risk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59056 - "OPTIONS /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56942 - "GET /v1/systemic/risk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59056 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58458 - "GET /v1/systemic/risk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56942 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50656 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50461 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+C:\Users\Degan\Documents\Antigravity\Nuclea\backend\main_rest_api.py:301: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  expire = datetime.utcnow() + expires_delta
+INFO:     127.0.0.1:56819 - "POST /v1/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59444 - "POST /v1/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56819 - "OPTIONS /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59444 - "OPTIONS /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56819 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59444 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59444 - "OPTIONS /v1/systemic/risk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56819 - "OPTIONS /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52976 - "OPTIONS /v1/systemic/risk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59444 - "OPTIONS /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52976 - "GET /v1/systemic/risk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56819 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59444 - "GET /v1/systemic/risk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50530 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59444 - "OPTIONS /v1/pd/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52976 - "OPTIONS /v1/pd/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52976 - "GET /v1/pd/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59444 - "GET /v1/pd/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59444 - "OPTIONS /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52976 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50530 - "OPTIONS /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52976 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50530 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62303 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62303 - "OPTIONS /v1/politica/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50530 - "OPTIONS /v1/pipeline/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52976 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59026 - "OPTIONS /v1/politica/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62303 - "OPTIONS /v1/pipeline/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59026 - "GET /v1/politica/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52976 - "GET /v1/pipeline/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62303 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51659 - "GET /v1/politica/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59026 - "GET /v1/pipeline/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59026 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51659 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59026 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51659 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55903 - "GET /v1/systemic/risk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62248 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65367 - "GET /v1/systemic/risk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55903 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50250 - "GET /v1/pd/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50250 - "GET /v1/pd/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53026 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56598 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53026 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49304 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53026 - "GET /v1/politica/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56598 - "GET /v1/pipeline/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49304 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52601 - "GET /v1/politica/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53026 - "GET /v1/pipeline/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56598 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49985 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62261 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53841 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50580 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57898 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53841 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63142 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54701 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63809 - "GET /v1/systemic/risk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49955 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50559 - "GET /v1/systemic/risk HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63809 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58375 - "GET /v1/pd/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58375 - "GET /v1/pd/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61587 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57399 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61587 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63800 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59406 - "GET /v1/politica/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52527 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53092 - "GET /v1/pipeline/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56079 - "GET /v1/politica/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59406 - "GET /v1/credit/pipeline HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52527 - "GET /v1/pipeline/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55974 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59271 - "GET /v1/governance/metrics HTTP/1.1" 200 OK
+C:\Users\Degan\Documents\Antigravity\Nuclea\backend\main_rest_api.py:301: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  expire = datetime.utcnow() + expires_delta
+INFO:     127.0.0.1:49676 - "POST /v1/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52680 - "POST /v1/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52680 - "OPTIONS /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49676 - "OPTIONS /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49676 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52680 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+C:\Users\Degan\Documents\Antigravity\Nuclea\backend\main_rest_api.py:301: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  expire = datetime.utcnow() + expires_delta
+INFO:     127.0.0.1:55449 - "POST /v1/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49674 - "POST /v1/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49674 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55449 - "GET /v1/portfolio/summary HTTP/1.1" 200 OK
