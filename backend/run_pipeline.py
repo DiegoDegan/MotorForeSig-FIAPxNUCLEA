@@ -8,6 +8,7 @@ root_dir = os.path.dirname(base_dir)
 
 scripts = [
     os.path.join(base_dir, "scripts", "limpeza.py"),
+    os.path.join(base_dir, "scripts", "extrair_metricas_grafo.py"),
     os.path.join(base_dir, "scripts", "montar_base_modelagem.py"),
     os.path.join(base_dir, "scripts", "atualizar_politicas_dinamicas.py"),
     os.path.join(base_dir, "core", "model_trainer.py"),
@@ -31,7 +32,7 @@ for script in scripts:
         continue
         
     print(f"\n>>> Executando: {os.path.basename(script)} ...")
-    result = subprocess.run([python_exe, script], cwd=base_dir)
+    result = subprocess.run([python_exe, script], cwd=root_dir)
     if result.returncode != 0:
         print(f"\n[ERRO CRÍTICO] O script {os.path.basename(script)} falhou! Abortando a esteira.")
         sys.exit(1)

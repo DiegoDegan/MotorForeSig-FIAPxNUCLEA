@@ -174,7 +174,7 @@ def rodar_pipeline():
             'atraso_previsto_dias',
             'PD', 'LGD', 'EL', 'STATUS_FINAL', 'MOTIVO_DECISAO',
             # colunas originais mantidas para compatibilidade com o dashboard
-            'score_pd_bruto', 'perda_esperada_el', 'decisao_politica',
+            'score_pd_bruto', 'perda_esperada_el', 'decisao_politica', 'parecer_ia_shap',
         ]
         
         # Garante que identificadores não travem caso não estejam na lista amostrada
@@ -199,7 +199,7 @@ def rodar_pipeline():
         print(f"Perda EL:     R$ {teste.get('perda_esperada_el', 0):,.2f}")
         print(f"Dias de Atraso Previstos: {teste.get('atraso_previsto_dias', teste.get('atraso_previsto', 0)):.1f}")
         print(f"VEREDITO:     >>> {teste['decisao_politica']} <<<")
-        print(f"Resumo da IA: {teste['parecer_ia_shap']}")
+        print(f"Resumo da IA: {teste.get('MOTIVO_DECISAO', teste.get('parecer_ia_shap', ''))}")
         print("---------------------------------------------------------")
         
     except Exception as e:

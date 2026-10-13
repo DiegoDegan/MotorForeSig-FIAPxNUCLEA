@@ -52,12 +52,11 @@ def montar_base_modelagem():
         # Merge 2: Mesclagem de Features de Grafo (Centralidade/PageRank)
         if not df_grafo.empty:
             logger.info("Adicionando inteligência de rede (Grafos)...")
-            # Assumindo que o grafo_features_mfs tem a coluna 'id_pagador' ou 'id_cnpj'
-            # Vamos unificar por 'id_pagador'
+            cols_grafo = [c for c in df_grafo.columns if c == 'id_boleto' or c not in ['id_pagador', 'id_beneficiario']]
             df_modelo = pd.merge(
                 df_modelo,
-                df_grafo,
-                on="id_pagador",
+                df_grafo[cols_grafo],
+                on="id_boleto",
                 how="left"
             )
         
