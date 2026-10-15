@@ -5,6 +5,7 @@ pydantic>=2.6.4
 pydantic-settings>=2.2.1
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+bcrypt<4.1.0  # Compatibilidade com passlib 1.7.4 (evita erro de 72 bytes e __about__)
 python-multipart>=0.0.9
 
 # --- Banco de Dados (Grafos) ---
@@ -13,6 +14,7 @@ neo4j>=5.18.0
 # --- Data Science & Machine Learning ---
 pandas>=2.2.0
 scikit-learn>=1.5.0
+scipy>=1.13.0  # Utilizado em model_trainer.py (ks_2samp)
 shap>=0.45.0
 joblib>=1.4.0
 lifelines>=0.29.0

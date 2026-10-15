@@ -21,21 +21,25 @@ The system has two deployable parts:
 # Install dependencies
 pip install -r requirements.txt
 
+# Start Neo4j with GDS plugin via Docker
+docker compose up -d
+
+# Run entire automated pipeline (from repo root)
+python backend/run_pipeline.py
+
+# Optional: Seed Neo4j graph with transactions
+python backend/scripts/upload_neo4j.py
+
 # Run API locally (from repo root)
 uvicorn backend.main_rest_api:app --host 0.0.0.0 --port 8000 --reload
 
-# Run individual data pipeline scripts (from repo root)
+# Run individual data pipeline scripts (if needed)
 python backend/scripts/limpeza.py
-python backend/scripts/get_bacen_data.py
 python backend/scripts/extrair_metricas_grafo.py
 python backend/scripts/montar_base_modelagem.py
-python backend/scripts/pipeline_operacional.py
-
-# Train/retrain ML models (requires data/processed/base_modelagem.csv)
-python backend/core/model_trainer.py
-
-# Update dynamic risk policies (rewrites backend/config/politica_risco.yaml)
 python backend/scripts/atualizar_politicas_dinamicas.py
+python backend/core/model_trainer.py
+python backend/scripts/pipeline_operacional.py
 ```
 
 ## Frontend Commands
@@ -65,11 +69,11 @@ npm run build
 Scripts run in sequence to produce the credit pipeline output:
 
 1. `limpeza.py` — cleans raw CSVs from `data/raw/` → `data/processed/`
-2. `get_bacen_data.py` — fetches SELIC/IPCA from BACEN API → `data/cache/`
-3. `extrair_metricas_grafo.py` — builds graph features (PageRank, degree) using NetworkX or Neo4j → `data/processed/grafo_features_mfs.csv`
-4. `montar_base_modelagem.py` — merges all sources → `data/processed/base_modelagem.csv`
-5. `atualizar_politicas_dinamicas.py` — analyzes defaults per CNAE sector and blocked cedentes, rewrites `backend/config/politica_risco.yaml`
-6. `pipeline_operacional.py` — applies ML models + YAML hard rules to produce `data/processed/pipeline_report_mesacredito.csv` with one decision stamp per boleto (`APROVADO_AUTO`, `ANALISE_MESA`, `REPROVADO_*`)
+2. `extrair_metricas_grafo.py` — builds graph features (PageRank, degree) using Neo4j GDS or NetworkX fallback → `data/processed/grafo_features_mfs.csv`
+3. `montar_base_modelagem.py` — merges all sources → `data/processed/base_modelagem.csv`
+4. `atualizar_politicas_dinamicas.py` — analyzes defaults per CNAE sector and blocked cedentes, rewrites `backend/config/politica_risco.yaml`
+5. `model_trainer.py` — trains/retrains Random Forest classifier and regressor → `backend/models/*.joblib`
+6. `pipeline_operacional.py` — applies ML models + SHAP explainability + YAML hard rules to produce `data/processed/pipeline_report_mesacredito.csv` with one decision stamp per boleto (`APROVADO_AUTO`, `ANALISE_MESA`, `REPROVADO_*`)
 
 ### Backend (FastAPI)
 
@@ -92,10 +96,12 @@ Risk thresholds live in `backend/config/politica_risco.yaml` and are hot-reloada
 
 ### Frontend (React + Vite)
 
-Four screens wired in `src/App.tsx` via sidebar navigation:
+Six screens wired in `src/App.tsx` via top navigation:
 - **CockpitScreen** (`modules/cockpit/`) — portfolio KPIs, sector distribution, rejection breakdown
-- **MesaCreditoScreen** (`modules/mesa-credito/`) — credit operations queue with approve/block actions
 - **RiscoSistemicoScreen** (`modules/risco-sistemico/`) — force-directed graph of beneficiary↔payer network
+- **PDPerdaEstimadaScreen** (`modules/pd-perda/`) — PD distribution, EL calculation, expected delay scatter
+- **ConcentracaoScreen** (`modules/concentracao/`) — portfolio limits, HHI index, cedent/sacado concentration
+- **PoliticaRejeicaoScreen** (`modules/politica-rejeicao/`) — live credit desk queue, SHAP justifications, approve/block actions
 - **GovernancaScreen** (`modules/governanca/`) — model metrics (AUC, KS, PSI), Kaplan-Meier survival curve, audit log
 
 All API calls go through `src/services/api.ts`, which manages token caching and auto-refresh on 401. The base URL is set via `VITE_API_URL` env var (defaults to `http://localhost:8000`).

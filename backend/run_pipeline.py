@@ -15,11 +15,15 @@ scripts = [
     os.path.join(base_dir, "scripts", "pipeline_operacional.py")
 ]
 
-# Tenta localizar o executável do python no ambiente virtual
-python_exe = os.path.join(root_dir, ".venv", "Scripts", "python.exe")
+# Tenta localizar o executável do python no ambiente virtual (.venv no Windows ou Linux/macOS)
+venv_win = os.path.join(root_dir, ".venv", "Scripts", "python.exe")
+venv_unix = os.path.join(root_dir, ".venv", "bin", "python")
 
-# Fallback para o python do sistema caso o .venv não exista no caminho esperado
-if not os.path.exists(python_exe):
+if os.path.exists(venv_win):
+    python_exe = venv_win
+elif os.path.exists(venv_unix):
+    python_exe = venv_unix
+else:
     python_exe = sys.executable
 
 print("="*60)
