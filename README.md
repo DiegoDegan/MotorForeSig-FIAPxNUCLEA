@@ -16,9 +16,8 @@ O sistema integra:
 Para aprofundar nos fundamentos e na arquitetura do projeto, consulte a pasta [`Documentação/`](Documentação/):
 
 * [Relatório Técnico \& Executivo Final](Documentação/Relatório%20Final%20-%20MFS.md): Racional detalhado, decisões de arquitetura e defesa de banca.
-* [Diagrama de Arquitetura](Documentação/diagrama_arquitetura_mfs.md): Fluxo de dados, contágio financeiro e componentes.
-* [Descrição dos Scripts](Documentação/DESCRIÇÃO_SCRIPTS.md): Guia funcional de cada script do backend.
-* [Guia de Configuração](Documentação/GUIA_CONFIGURACAO_MFS.md): Manual detalhado de replicação para novos desenvolvedores.
+* [Referência Técnica dos Scripts \& API](Documentação/REFERENCIA_TECNICA_SCRIPTS.md): Guia funcional de cada script do backend, catálogo da API REST e fluxo de dados.
+* [Estudo de Qualidade do Modelo (Jupyter Notebook)](Documentação/estudo_qualidade_modelo_mfs.ipynb): Análise de métricas, calibração e curvas de performance.
 
 \---
 
@@ -68,7 +67,7 @@ cp frontend\_mvp/.env.example frontend\_mvp/.env
 ```
 
 > \[!NOTE]
-> As credenciais padrão do `.env.example` já vêm configuradas para conectar no container local do Neo4j (`bolt://localhost:7687`, usuário `admin` e senha `nuclea`).
+> As credenciais padrão do `.env.example` já vêm configuradas para conectar no container local do Neo4j (`bolt://localhost:7687`, usuário `neo4j` e senha `nuclea`).
 
 \---
 
@@ -145,7 +144,7 @@ Com os serviços rodando, você e seus colegas têm acesso completo:
 |-|-|-|
 |**Painel Frontend**|`http://localhost:3000`|Interface visual: Cockpit, Mesa de Crédito, Risco Sistêmico e Governança|
 |**Documentação da API**|`http://localhost:8000/docs`|Swagger interativo da API REST|
-|**Neo4j Browser (Navegador)**|`http://localhost:7474`|**Connect URL:** `bolt://localhost:7687`<br>**User:** `admin`<br>**Password:** `nuclea`|
+|**Neo4j Browser (Navegador)**|`http://localhost:7474`|**Connect URL:** `bolt://localhost:7687`<br>**User:** `neo4j`<br>**Password:** `nuclea`|
 
 ### Exemplo de Query Cypher para testar no Neo4j Browser:
 
