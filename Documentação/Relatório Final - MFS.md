@@ -110,22 +110,28 @@ A escolha de cada componente na arquitetura do MFS responde a critérios rigoros
 A esteira opera em um fluxo sequencial e determinístico, orquestrado centralmente pelo script `backend/run\\\_pipeline.py`.
 
 ```
-  \\\[data/raw/]  (base\\\_boletos\\\_fiap.csv + base\\\_auxiliar\\\_fiap.csv)
+  \[data/raw/]  (base\_boletos\_fiap.csv + base\_auxiliar\_fiap.csv)
        │
        ▼
-  1. LIMPEZA \\\& HIGIENIZAÇÃO (limpeza.py)
+  1. LIMPEZA \& HIGIENIZAÇÃO (limpeza.py)
        │ • Converte tipos e ajusta campos temporais
-       │ • Cria target de default (dias\\\_atraso > 60)
+       │ • Cria target de default (dias\_atraso > 60)
        │ • Imputa métricas da base cadastral
+       │
+       ▼ [SMART SYNC COM NEO4J]
+       ├──▶ Se Neo4j online & vazio ➔ Ingestão automática (upload\_neo4j.py)
+       ├──▶ Se Neo4j online & populado ➔ Pula upload (ganho de performance)
+       └──▶ Se Neo4j offline ➔ Emite aviso e ativa fallback em NetworkX
+       │
        ▼
-  2. ENGENHARIA DE REDES (extrair\\\_metricas\\\_grafo.py)
+  2. ENGENHARIA DE REDES (extrair\_metricas\_grafo.py)
        │ • Projeta grafo transacional: Pagador ➔ Beneficiário
-       │ • Executa PageRank \\\& Degree Centrality (Neo4j GDS com fallback NetworkX)
+       │ • Executa PageRank \& Degree Centrality (Neo4j GDS com fallback NetworkX)
        │ • Calcula Exposição de Contágio Reverso do Cedente
        ▼
-  3. FUSÃO DA BASE DE MODELAGEM (montar\\\_base\\\_modelagem.py)
-       │ • Faz o merge 1:1 por id\\\_boleto (Transações + Cadastral + Grafo)
-       │ • Consolida base\\\_modelagem.csv
+  3. FUSÃO DA BASE DE MODELAGEM (montar\_base\_modelagem.py)
+       │ • Faz o merge 1:1 por id\_boleto (Transações + Cadastral + Grafo)
+       │ • Consolida base\_modelagem.csv
        ├───▶ 4. POLÍTICAS MACROPRUDENCIAIS DINÂMICAS (atualizar\\\_politicas\\\_dinamicas.py)
        │         • Audita defaults por CNAE e Cedente
        │         • Sobrescreve backend/config/politica\\\_risco.yaml
@@ -297,43 +303,43 @@ Utilize este roteiro estratégico para responder a perguntas técnicas ou concei
 
 ### P4: "Qual é o papel do Neo4j em produção versus o fallback de NetworkX?"
 
-> \\\*\\\*Resposta:\\\*\\\*  
-> \\\*"Trata-se de uma decisão de Arquitetura de Software voltada para tolerância a falhas e FinOps. O Neo4j com o Graph Data Science (GDS) é a infraestrutura corporativa desenhada para suportar milhões de duplicatas distribuídas na nuvem com ACID e consultas ad-hoc em Cypher. Já o NetworkX atua como uma camada de alta disponibilidade (fallback operacional local). Se o cluster de banco sofrer qualquer interrupção, o pipeline recalcula todas as métricas em memória RAM determinísticamente, garantindo que a esteira de crédito nunca pare."\\\*
+> \*\*Resposta:\*\*  
+> \*"Trata-se de uma decisão de Arquitetura de Software voltada para tolerância a falhas, automação e FinOps. O Neo4j com o Graph Data Science (GDS) é a infraestrutura corporativa desenhada para suportar milhões de duplicatas distribuídas na nuvem com ACID e consultas ad-hoc em Cypher. A esteira foi equipada com um mecanismo de **Smart Sync**: ao iniciar, o pipeline detecta automaticamente se o Neo4j está ativo e sem dados para realizar a ingestão (`upload_neo4j.py`) sem esforço manual. Já o NetworkX atua como uma camada de alta disponibilidade (fallback operacional local). Se o cluster de banco sofrer qualquer interrupção ou não estiver configurado no ambiente, o pipeline recalcula todas as métricas em memória RAM determinísticamente, garantindo que a esteira de crédito nunca pare."\*
 
-\---
+---
 
 ### P5: "Como o sistema garante que o modelo de IA não fique desatualizado ao longo do tempo?"
 
-> \\\*\\\*Resposta:\\\*\\\*  
-> \\\*"Através da nossa camada de Governança e MLOps. O sistema monitora continuamente o índice PSI (Population Stability Index) das variáveis preditivas. Caso ocorra uma alteração no comportamento do mercado e o PSI ultrapasse o limiar prudencial de 0.25 (Data Drift), um gatilho de retreino é acionado automaticamente, orquestrando um novo ciclo do pipeline e atualizando as políticas macroprudenciais dinâmicas no arquivo de configuração sem necessidade de alterar o código-fonte."\\\*
+> \*\*Resposta:\*\*  
+> \*"Através da nossa camada de Governança e MLOps. O sistema monitora continuamente o índice PSI (Population Stability Index) das variáveis preditivas. Caso ocorra uma alteração no comportamento do mercado e o PSI ultrapasse o limiar prudencial de 0.25 (Data Drift), um gatilho de retreino é acionado automaticamente, orquestrando um novo ciclo do pipeline e atualizando as políticas macroprudenciais dinâmicas no arquivo de configuração sem necessidade de alterar o código-fonte."\*
 
-\---
+---
 
 ## 9\. Mapa do Repositório \& Estrutura de Arquivos
 
 ```
 ├── backend/
-│   ├── main\\\_rest\\\_api.py              # Servidor FastAPI com 14 rotas e modelos em RAM (lifespan)
-│   ├── run\\\_pipeline.py               # Orquestrador Master do pipeline de dados (end-to-end)
+│   ├── main\_rest\_api.py              # Servidor FastAPI com 14 rotas e modelos em RAM (lifespan)
+│   ├── run\_pipeline.py               # Orquestrador Master com Smart Sync de grafos (end-to-end)
 │   ├── config/
 │   │   ├── settings.py               # Configurações Pydantic centralizadas (.env)
-│   │   ├── logging\\\_config.py         # Padronização de logs da aplicação
-│   │   └── politica\\\_risco.yaml       # Regras duras de corte, limites de PD e listas de CNAE/Cedentes
+│   │   ├── logging\_config.py         # Padronização de logs da aplicação
+│   │   └── politica\_risco.yaml       # Regras duras de corte, limites de PD e listas de CNAE/Cedentes
 │   ├── core/
-│   │   ├── model\\\_trainer.py          # Treinamento dos modelos Random Forest (PD e Atraso)
+│   │   ├── model\_trainer.py          # Treinamento dos modelos Random Forest (PD e Atraso)
 │   │   ├── explicabilidade.py        # Tradutor de valores SHAP para linguagem humana de negócios
-│   │   └── gcs\\\_manager.py            # Sincronização stateless com o Google Cloud Storage
+│   │   └── gcs\_manager.py            # Sincronização stateless com o Google Cloud Storage
 │   ├── models/                       # Modelos serializados salvos (.joblib)
 │   └── scripts/
 │       ├── limpeza.py                # Higienização de dados brutos e cálculo de atrasos
-│       ├── extrair\\\_metricas\\\_grafo.py # Extração nativa de PageRank/Degree via Neo4j GDS + NetworkX
-│       ├── montar\\\_base\\\_modelagem.py  # Consolidação 1:1 por boleto dos dados transacionais, cadastrais e de rede
-│       ├── atualizar\\\_politicas\\\_dinamicas.py # Análise de risco setorial e atualização de politica\\\_risco.yaml
-│       ├── pipeline\\\_operacional.py   # Aplicação de regras + IA + SHAP ➔ pipeline\\\_report\\\_mesacredito.csv
-│       ├── upload\\\_neo4j.py           # Injeção em lote de nós e arestas no Neo4j
-│       ├── backtest\\\_suite.py         # Validação temporal out-of-time da acurácia do modelo
-│       ├── monitor\\\_data\\\_drift.py     # Cálculo de PSI para auditoria de estabilidade populacional
-│       └── analise\\\_sobrevivencia.py  # Ajuste de curvas atuaritas de Kaplan-Meier
+│       ├── extrair\_metricas\_grafo.py # Extração nativa de PageRank/Degree via Neo4j GDS + NetworkX
+│       ├── montar\_base\_modelagem.py  # Consolidação 1:1 por boleto dos dados transacionais, cadastrais e de rede
+│       ├── atualizar\_politicas\_dinamicas.py # Análise de risco setorial e atualização de politica\_risco.yaml
+│       ├── pipeline\_operacional.py   # Aplicação de regras + IA + SHAP ➔ pipeline\_report\_mesacredito.csv
+│       ├── upload\_neo4j.py           # Injeção em lote no Neo4j (manual ou auto via Smart Sync)
+│       ├── backtest\_suite.py         # Validação temporal out-of-time da acurácia do modelo
+│       ├── monitor\_data\_drift.py     # Cálculo de PSI para auditoria de estabilidade populacional
+│       └── analise\_sobrevivencia.py  # Ajuste de curvas atuaritas de Kaplan-Meier
 ├── frontend\\\_mvp/
 │   ├── package.json                  # Dependências do React 19, Vite, Tailwind CSS e Recharts
 │   └── src/

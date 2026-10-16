@@ -85,17 +85,24 @@ docker compose up -d
 
 \---
 
-### 5\. Executar a Esteira de Dados e IA (Pipeline Mestro)
+### 5\. Executar a Esteira de Dados e IA (Pipeline Mestre com Smart Sync)
 
-Execute a esteira que limpa os dados brutos, extrai métricas no Neo4j GDS, treina os modelos preditivos e gera os relatórios operacionais:
+Execute a esteira unificada que limpa os dados brutos, sincroniza com o banco de grafos, extrai métricas, treina os modelos preditivos e gera os relatórios operacionais:
 
 ```bash
 python backend/run\_pipeline.py
 ```
 
-#### Popular o Banco Neo4j para Consultas no Navegador (Opcional, mas Recomendado)
+> [!TIP]
+> **Sincronização Inteligente com o Neo4j (Smart Sync):**  
+> Logo após a limpeza higienizar os CSVs brutos, o `run\_pipeline.py` verifica automaticamente a conectividade do Neo4j:
+> * Se o Neo4j estiver online e sem dados, executa o `upload\_neo4j.py` automaticamente.
+> * Se o banco já estiver populado, pula a carga para economizar tempo.
+> * Se o Neo4j estiver offline, prossegue sem travar a esteira, acionando o fallback automático em memória via **NetworkX**.
 
-Para carregar todas as transações, empresas e relacionamentos diretamente no banco Neo4j para permitir consultas visuais:
+#### Carga Manual no Banco Neo4j (Opcional)
+
+Se você preferir rodar a injeção de transações no Neo4j de forma avulsa para consultas visuais no Neo4j Browser (`http://localhost:7474`):
 
 ```bash
 python backend/scripts/upload\_neo4j.py

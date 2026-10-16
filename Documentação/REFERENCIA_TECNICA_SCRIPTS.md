@@ -39,6 +39,12 @@ data/raw/ (base_boletos_fiap.csv + base_auxiliar_fiap.csv)
   ▼
 [Etapa 1: limpeza.py]
   │  Produz: base_boletos_tratados.csv e base_auxiliar_tratada.csv
+  │
+  ▼  [Smart Sync] Verifica se o Neo4j está ativo e sem dados
+  ├──▶ (Se online e vazio) ──▶ Executa upload_neo4j.py automaticamente
+  ├──▶ (Se online e populado) ➔ Pula upload para ganho de tempo
+  └──▶ (Se offline) ──────────➔ Emite aviso e segue para fallback NetworkX
+  │
   ▼
 [Etapa 2: extrair_metricas_grafo.py] (Neo4j GDS Docker / Fallback NetworkX)
   │  Produz: grafo_features_mfs.csv (PageRank, Grau e Contágio Reverso)
@@ -65,18 +71,19 @@ data/raw/ (base_boletos_fiap.csv + base_auxiliar_fiap.csv)
 ---
 
 ### `run_pipeline.py`
-* **Categoria:** Orquestrador Master
+* **Categoria:** Orquestrador Master (com Smart Sync de Grafos)
 * **Como executar:** `python backend/run_pipeline.py`
 * **Responsabilidade:**
   1. Detecta dinamicamente o executável Python do ambiente virtual (`.venv/Scripts/python.exe` no Windows ou `.venv/bin/python` no Linux/macOS).
-  2. Executa a esteira determinística de 6 etapas:
+  2. Executa a esteira determinística com verificação inteligente de banco de grafos:
      - Passo 1: `backend/scripts/limpeza.py`
+     - **[Smart Sync]**: Avalia a conectividade do Neo4j. Se o banco estiver online e sem entidades, executa automaticamente `upload_neo4j.py`. Se já estiver populado, preserva o banco e pula a carga. Se o Neo4j estiver indisponível, emite aviso e prossegue para que o passo 2 ative o fallback em memória via NetworkX.
      - Passo 2: `backend/scripts/extrair_metricas_grafo.py`
      - Passo 3: `backend/scripts/montar_base_modelagem.py`
      - Passo 4: `backend/scripts/atualizar_politicas_dinamicas.py`
      - Passo 5: `backend/core/model_trainer.py`
      - Passo 6: `backend/scripts/pipeline_operacional.py`
-  3. Garante que qualquer falha intermediária interrompa imediatamente o processo (`sys.exit(1)`).
+  3. Garante que qualquer falha intermediária em etapas obrigatórias interrompa imediatamente o processo (`sys.exit(1)`).
 
 ---
 
@@ -202,9 +209,9 @@ data/raw/ (base_boletos_fiap.csv + base_auxiliar_fiap.csv)
 ---
 
 ### `scripts/upload_neo4j.py`
-* **Categoria:** Utilitário de Grafos
-* **Como executar:** `python backend/scripts/upload_neo4j.py`
-* **Processamento:** Injeta em lote (batches de 1.000) as entidades `(:Empresa)` e os relacionamentos `[:PAGOU_PARA]` no Neo4j com propriedades transacionais (`vlr_nominal`, datas, default). Utilizado para permitir inspeção visual via Neo4j Browser (`http://localhost:7474`).
+* **Categoria:** Ingestão de Grafos / Smart Sync
+* **Como executar:** `python backend/scripts/upload_neo4j.py` (ou acionado automaticamente pelo `run_pipeline.py` via Smart Sync caso o Neo4j esteja online e vazio)
+* **Processamento:** Injeta em lote (batches de 1.000) as entidades `(:Empresa)` e os relacionamentos `[:PAGOU_PARA]` no Neo4j com propriedades transacionais (`vlr_nominal`, datas, default). Utilizado para permitir inspeção visual via Neo4j Browser (`http://localhost:7474`) e alimentar o cálculo nativo de GDS.
 
 ---
 

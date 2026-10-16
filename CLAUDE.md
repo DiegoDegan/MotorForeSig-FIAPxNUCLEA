@@ -69,7 +69,8 @@ npm run build
 Scripts run in sequence to produce the credit pipeline output:
 
 1. `limpeza.py` — cleans raw CSVs from `data/raw/` → `data/processed/`
-2. `extrair_metricas_grafo.py` — builds graph features (PageRank, degree) using Neo4j GDS or NetworkX fallback → `data/processed/grafo_features_mfs.csv`
+   * *Smart Sync*: `run_pipeline.py` checks Neo4j connectivity. If active and empty, runs `upload_neo4j.py` automatically; if offline, falls back seamlessly to NetworkX.
+2. `extrair_metricas_grafo.py` — builds graph features (PageRank, degree, reverse contagion) using Neo4j GDS or NetworkX fallback → `data/processed/grafo_features_mfs.csv`
 3. `montar_base_modelagem.py` — merges all sources → `data/processed/base_modelagem.csv`
 4. `atualizar_politicas_dinamicas.py` — analyzes defaults per CNAE sector and blocked cedentes, rewrites `backend/config/politica_risco.yaml`
 5. `model_trainer.py` — trains/retrains Random Forest classifier and regressor → `backend/models/*.joblib`
