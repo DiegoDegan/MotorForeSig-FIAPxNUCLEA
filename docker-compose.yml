@@ -7,7 +7,7 @@ services:
       - "7474:7474"   # Neo4j Browser (Web UI para queries e testes no navegador)
       - "7687:7687"   # Bolt TCP Protocol (Driver Python e conexões de query)
     environment:
-      - NEO4J_AUTH=neo4j/nuclea_segura_2024
+      - NEO4J_AUTH=${NEO4J_USER:-admin}/${NEO4J_PASSWORD:-nuclea}
       - NEO4J_PLUGINS=["graph-data-science", "apoc"]
       - NEO4J_dbms_security_procedures_unrestricted=gds.*,apoc.*
       - NEO4J_dbms_security_procedures_allowlist=gds.*,apoc.*
