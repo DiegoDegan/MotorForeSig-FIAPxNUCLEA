@@ -66,11 +66,14 @@ def verificar_e_sincronizar_neo4j(python_exe: str, root_dir: str, base_dir: str)
             print("    [INFO] Neo4j conectado, porém sem transações. Executando upload_neo4j.py automaticamente...")
             upload_script = os.path.join(base_dir, "scripts", "upload_neo4j.py")
             if os.path.exists(upload_script):
+                import time
+                t0 = time.time()
                 res = subprocess.run([python_exe, upload_script], cwd=root_dir)
+                t_upload = time.time() - t0
                 if res.returncode == 0:
-                    print("    [SUCESSO] Ingestão no Neo4j finalizada com êxito!")
+                    print(f"    [SUCESSO] Ingestão no Neo4j finalizada com êxito em {t_upload:.2f} segundos!")
                 else:
-                    print("    [AVISO] Ingestão no Neo4j retornou código diferente de zero. A esteira seguirá com fallback.")
+                    print(f"    [AVISO] Ingestão no Neo4j falhou (tempo: {t_upload:.2f}s). A esteira seguirá com fallback.")
             else:
                 print(f"    [AVISO] Script {upload_script} não encontrado.")
     except Exception as e:
